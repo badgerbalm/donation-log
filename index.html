@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b7276">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Donation Log</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<header><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1>Donation Log</h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-expanded="false" aria-controls="app-menu">Menu</button></div></header>
+<div id="menu-backdrop" class="menu-backdrop" hidden></div>
+<nav id="app-menu" class="app-menu" aria-label="Main menu" aria-hidden="true">
+<div class="menu-top"><strong>Donation Log</strong><button type="button" id="menu-close" class="secondary">Close</button></div>
+<button type="button" data-page="entry" class="menu-link active">Enter a visit</button>
+<button type="button" data-page="report" class="menu-link">Blood pressure report</button>
+<button type="button" data-page="history" class="menu-link">Visit history</button>
+</nav>
+<main>
+<section class="card report page" data-page-panel="report" aria-labelledby="report-title" hidden>
+<h2 id="report-title">Blood pressure report</h2>
+<p class="muted">CSL donation screening readings. Medication dates are shown for context.</p>
+<div id="medications" class="medications"></div>
+<div class="actions"><button type="button" class="secondary" id="toggle-bp-chart" aria-expanded="false" aria-controls="bp-chart-panel">Show BP graph</button></div>
+<div id="bp-chart-panel" class="chart-wrap" hidden><svg id="bp-chart" role="img" aria-label="Blood pressure readings over time"></svg></div>
+<div id="period-summary" class="period-summary"></div>
+<div class="actions"><button type="button" class="secondary" id="print-report">Print report / Save PDF</button></div>
+</section>
+<section class="card page" data-page-panel="entry" aria-labelledby="form-title">
+<div id="pending-visits" hidden>
+<h2>Today's visits</h2>
+<p id="dashboard-status" role="status" aria-live="polite"></p>
+<div id="pending-list"></div>
+<div class="actions"><button type="button" class="secondary" id="add-new-visit">Add new visit</button></div>
+</div>
+<div id="entry-editor">
+<h2 id="form-title">New visit</h2>
+<form id="visit">
+<fieldset class="form-step"><legend>1. Before donation</legend><div class="grid">
+<label>Visit date <input name="date" type="date" required></label>
+<label>Visit type <select name="visitType"><option>CSL donation</option><option>Doctor / clinic</option><option>Home reading</option><option>Other</option></select></label>
+<label>Arm <select name="arm"><option value="">Select arm</option><option>Left</option><option>Right</option><option>Both</option></select></label>
+<label>Hematocrit (%) <select name="hematocrit"><option value="">Select (30–65)</option><option>30</option><option>31</option><option>32</option><option>33</option><option>34</option><option>35</option><option>36</option><option>37</option><option>38</option><option>39</option><option>40</option><option>41</option><option>42</option><option>43</option><option>44</option><option>45</option><option>46</option><option>47</option><option>48</option><option>49</option><option>50</option><option>51</option><option>52</option><option>53</option><option>54</option><option>55</option><option>56</option><option>57</option><option>58</option><option>59</option><option>60</option><option>61</option><option>62</option><option>63</option><option>64</option><option>65</option></select></label>
+<label>Total protein (g/dL) <select name="protein"><option value="">Select (5.5–9.5)</option><option value="5.5">5.5</option><option value="5.6">5.6</option><option value="5.7">5.7</option><option value="5.8">5.8</option><option value="5.9">5.9</option><option value="6.0">6.0</option><option value="6.1">6.1</option><option value="6.2">6.2</option><option value="6.3">6.3</option><option value="6.4">6.4</option><option value="6.5">6.5</option><option value="6.6">6.6</option><option value="6.7">6.7</option><option value="6.8">6.8</option><option value="6.9">6.9</option><option value="7.0">7.0</option><option value="7.1">7.1</option><option value="7.2">7.2</option><option value="7.3">7.3</option><option value="7.4">7.4</option><option value="7.5">7.5</option><option value="7.6">7.6</option><option value="7.7">7.7</option><option value="7.8">7.8</option><option value="7.9">7.9</option><option value="8.0">8.0</option><option value="8.1">8.1</option><option value="8.2">8.2</option><option value="8.3">8.3</option><option value="8.4">8.4</option><option value="8.5">8.5</option><option value="8.6">8.6</option><option value="8.7">8.7</option><option value="8.8">8.8</option><option value="8.9">8.9</option><option value="9.0">9.0</option><option value="9.1">9.1</option><option value="9.2">9.2</option><option value="9.3">9.3</option><option value="9.4">9.4</option><option value="9.5">9.5</option></select></label>
+</div></fieldset>
+<fieldset class="form-step"><legend>2. After donation</legend><div class="grid">
+<label>Visit time <input name="time" type="time"></label>
+<label>Systolic (mm Hg) <input name="systolic" type="number" inputmode="numeric" min="1" max="400" step="1"></label>
+<label>Diastolic (mm Hg) <input name="diastolic" type="number" inputmode="numeric" min="1" max="400" step="1"></label>
+<label>Pulse (bpm) <input name="pulse" type="number" inputmode="numeric" min="1" max="400" step="1"></label>
+<label>Weight (lb) <input name="weight" type="number" inputmode="decimal" min="0.01" step="any"></label>
+<label>Temperature (°F) <input name="temperature" type="number" inputmode="decimal" min="1" step="any"></label>
+<label>Duration (min) <input name="duration" type="number" inputmode="decimal" min="0" step="any"></label>
+</div></fieldset>
+<label>Visit notes <textarea name="notes" rows="2" maxlength="2000"></textarea></label>
+<div class="actions"><button type="submit">Save visit</button><button type="button" id="cancel" class="secondary" hidden>Cancel edit</button></div>
+</form>
+<p id="status" role="status" aria-live="polite"></p>
+<div id="connection-help" class="scan-box" hidden><h3>Connect your private data</h3><p>Open Daily Workout and connect your Google account. Then return here and refresh the page. Both apps share this sign-in on the same website.</p><a class="button-link" href="../">Open Daily Workout to connect</a></div>
+<div class="scan-box"><h3>Scan a CSL screenshot</h3><p class="muted">Choose a Donation Details screenshot. Review the fields before saving the visit.</p><label class="upload-label">Choose screenshot<input type="file" id="scan-image" accept="image/*" capture="environment"></label><img id="scan-preview" alt="Selected donation screenshot preview" hidden><p id="scan-status" role="status"></p></div>
+</div>
+</section>
+<section class="card page" data-page-panel="history" aria-labelledby="history-title" hidden>
+<h2 id="history-title">Visit history</h2>
+<p class="muted">One panel per measurement, with labeled scales and years. Blood pressure uses mm Hg; weight, hematocrit, and total protein each use their own units.</p>
+<div class="history-chart-wrap"><svg id="history-chart" role="img" aria-label="Blood pressure and donation measurements over time"></svg></div>
+<div class="history-legend"><span>Blood pressure</span><span>Weight</span><span>Hematocrit</span><span>Total protein</span></div>
+<div class="actions">
+<button class="secondary" id="visit-refresh" type="button">Refresh</button>
+<button class="secondary" id="csv">Export CSV</button>
+<button class="secondary" id="backup">Export backup</button>
+<button class="secondary" id="import">Import backup</button>
+<input type="file" id="file" accept=".json,application/json" hidden>
+</div>
+<p id="history-status" role="status"></p>
+<div class="table-scroll"><table id="history-table"><thead><tr><th>Date</th><th>Visit type</th><th>BP</th><th>Pulse</th><th>Weight</th><th>Temp</th><th>Hematocrit</th><th>Total protein (g/dL)</th><th>Arm / Duration</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
+<ul id="history"></ul>
+</section>
+</main>
+<dialog id="scan-dialog"><form method="dialog"><h2>Review screenshot details</h2><p id="scan-message" role="status"></p><div class="actions"><button value="close" class="secondary">Close</button></div></form></dialog>
+</body>
+</html>
+
