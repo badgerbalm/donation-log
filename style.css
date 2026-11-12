@@ -2,7 +2,7 @@
 :root{font:16px/1.5 system-ui,sans-serif;color:#17252b;background:#edf3f2}
 body{margin:0}
 header{display:block;width:100%;background:#142d33;color:#f6fffd;padding:20px}
-header>div,main{width:100%;max-width:920px;margin:0 auto}
+header>.header-inner{width:100%;max-width:none;margin:0 auto}main{width:100%;max-width:920px;margin:0 auto}
 .header-row{display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:0}
 .header-row>div{min-width:0;flex:1}
 .menu-button{flex:0 0 auto;white-space:nowrap;min-width:88px;background:#f6fffd;color:#142d33}
@@ -67,7 +67,7 @@ button.secondary{background:white;color:#155447;border-color:#a5bbb6}
 .medications{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
 .medication{border-left:3px solid #a14330;padding:7px 12px;background:#fff5f1;border-radius:4px}
 .chart-wrap{width:100%;overflow-x:auto}
-#bp-chart{display:block;width:100%;min-width:520px;height:290px}
+#bp-chart{display:block;width:100%;min-width:760px;height:360px}.chart-controls{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 0 12px}.chart-controls label{width:min(100%,220px)}.chart-controls select{background:white}.chart-wrap{overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
 .period-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
 .period-summary div{background:#f1f6f5;border-radius:9px;padding:12px}
 .scan-box{margin-top:20px;border-top:1px solid #d6e3e0;padding-top:12px}
@@ -80,9 +80,9 @@ dialog{border:1px solid #a5bbb6;border-radius:14px;max-width:min(92vw,420px);col
 dialog::backdrop{background:#12282c99}
 @media print{body{background:white}header{padding:12px 20px;background:white;color:#142d33}header p{color:#142d33}dialog#app-menu,header .menu-button{display:none}main{display:block;margin:0 auto}.card{border:0;padding:10px;break-inside:avoid}.card:not(.report){display:none}.actions{display:none}.report{display:block}.muted{color:#333}}
 [hidden]{display:none!important}
-@media(max-width:480px){header{padding:16px 14px}.header-row{gap:10px}.header-row h1{font-size:clamp(1.9rem,8vw,2.6rem)}.header-row .menu-button{min-width:82px;padding:8px 10px}header>div,main{width:100%}}
+@media(max-width:480px){header{padding:16px 14px}.header-row{gap:10px}.header-row h1{font-size:clamp(1.9rem,8vw,2.6rem)}.header-row .menu-button{min-width:82px;padding:8px 10px}header>.header-inner,main{width:100%}}
 @media(max-width:600px){header{width:100%;min-width:0;padding-inline:max(14px,env(safe-area-inset-left,0px))}.header-row{width:100%;flex-wrap:nowrap}.header-row>div{flex:1 1 auto;min-width:0}.header-row .menu-button{flex:0 0 auto;white-space:nowrap}.header-row h1{overflow-wrap:normal;word-break:normal}main{width:100%;min-width:0}}
 @media(max-width:760px){header{width:100%;max-width:none}header>div{max-width:none!important}main{max-width:920px}}
-@media(orientation:portrait) and (max-width:760px){header>div{max-width:none}}
-@media(min-width:760px){main{grid-template-columns:1fr 1fr;align-items:start}}
+@media(orientation:portrait) and (max-width:760px){header>.header-inner{max-width:none}}
+@media(max-width:760px){header{width:100%;max-width:none}header>.header-inner{max-width:none}main{max-width:920px}}\n@media(min-width:760px){main{grid-template-columns:1fr 1fr;align-items:start}}
 
