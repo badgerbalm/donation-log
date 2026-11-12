@@ -182,3 +182,22 @@ body:not(.menu-open) main button.secondary{background:#e5f6f2;color:#07584f;bord
 .pending-visit-icon{flex:0 0 48px;width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:#d5f7ef}
 .pending-visit-icon svg{display:block;width:30px;height:36px}
 .pending-visit.csl-visit>p{flex:1 1 220px}
+
+
+/* Slide-out menu uses the Donation Log palette */
+.app-menu{background:linear-gradient(180deg,#e8fbf7 0%,#d8f5ee 100%);color:#123b3a;border-left:4px solid #58c5a5;box-shadow:-16px 0 48px #073d3655}
+.menu-top{border-bottom:1px solid #a9ddd4}
+.menu-top h2{color:#063f3b}
+.menu-top button{color:#07584f;background:#fff;border-color:#86c6b9}
+.menu-refresh{border-bottom:2px solid #58c5a5}
+.menu-refresh button{background:linear-gradient(110deg,#078875,#006658);border:1px solid #007366;color:#fff;box-shadow:0 4px 10px #0066582e}
+.menu-refresh p{color:#456661}
+.menu-section-title{color:#087b6d}
+.menu-link{background:#fff;color:#123b3a;border-color:#c5e7e1;box-shadow:0 3px 0 #b8dfd7}
+.menu-link:hover{background:#f1fbf8;border-color:#7bc7b9}
+.menu-link.active{background:#d7f5ee;border-color:#48aa9b;border-left:4px solid #078875;color:#063f3b;box-shadow:0 3px 0 #b8dfd7}
+.menu-content .menu-icon{background:#e2f7f2;border-color:#b9e4dc;color:#07584f}
+.menu-trends>summary{background:#fff;color:#123b3a;border-color:#c5e7e1;box-shadow:0 3px 0 #b8dfd7}
+.menu-trends>summary::after{color:#078875}
+.menu-trend-links .menu-link{background:#fff;color:#123b3a}
+.menu-trend-links .menu-link.active{background:#d7f5ee;color:#063f3b}
