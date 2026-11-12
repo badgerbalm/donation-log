@@ -8,11 +8,11 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180-v2.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
-<link rel="stylesheet" href="style.css?v=picker-center-20261112-14">
+<link rel="stylesheet" href="style.css?v=scan-clipboard-20261112-21">
 <script src="menu.js?v=direct-menu-v2-20261112" defer></script>
 <script src="navigation.js?v=direct-menu-v2-20261112" defer></script>
 <script src="jsQR.js?v=1.4.0" defer></script>
-<script src="app.js?v=screening-finger-20261112-19" defer></script>
+<script src="app.js?v=scan-clipboard-20261112-21" defer></script>
 </head>
 <body>
 <header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1><svg class="header-blood-drop" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 4C25 15 12 28 12 40a20 20 0 0 0 40 0C52 28 39 15 32 4Z" fill="#ff3349" stroke="#fff" stroke-width="4"/><path d="M24 39c0 5 3 9 8 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg><span>Donation Log</span></h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
@@ -153,7 +153,7 @@
 <div id="scan-stage" class="scan-box" hidden>
 <h3 id="scan-stage-title">Scan CSL Confirmation</h3>
 <p id="scan-help" class="muted">Choose a CSL Donation Details screenshot to add the remaining readings.</p>
-<label class="scan-upload"><span class="scan-upload-button">▧ Choose Screenshot</span><span id="scan-file-name" class="scan-file-name">No screenshot selected yet</span><input type="file" id="scan-image" accept="image/*"></label>
+<div class="qr-source-actions"><button type="button" id="choose-scan-image" class="scan-upload-button">▧ Choose Photo or File</button><button type="button" id="paste-scan-image" class="secondary">▣ Paste from Clipboard</button><input type="file" id="scan-image" accept="image/*" hidden></div><p id="scan-file-name" class="scan-file-name">No screenshot selected yet</p>
 <div class="actions"><button type="button" id="scan-read" disabled>Read Screenshot</button></div>
 <p class="scan-privacy muted">The screenshot is processed on this device. It is not uploaded or saved with your visit. The OCR engine and English model download when you scan.</p>
 <p id="scan-status" role="status" aria-live="polite"></p>
