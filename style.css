@@ -64,7 +64,7 @@ button.secondary{background:white;color:#155447;border-color:#a5bbb6}
 .history-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem}
 #status,#history-status{margin-bottom:0}
 .report{grid-column:1/-1}
-.report-export-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.report-export-actions button{width:100%;min-width:0;padding:8px 10px;white-space:nowrap}
+.report-export-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.report-export-actions button{width:100%;min-width:0;padding:8px 10px;white-space:nowrap}.report-export-actions button{background:#176454;color:#fff;border-color:#176454}.report-export-actions button:active{background:#0b4d43;border-color:#0b4d43}
 .medications{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
 .medication{border-left:3px solid #a14330;padding:7px 12px;background:#fff5f1;border-radius:4px}
 .chart-wrap{display:block;width:100%;max-width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
