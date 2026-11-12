@@ -87,3 +87,16 @@ dialog::backdrop{background:#12282c99}
 @media(orientation:portrait) and (max-width:760px){header>.header-inner{max-width:none}}
 @media(max-width:760px){header{width:100%;max-width:none}header>.header-inner{max-width:none}main{max-width:920px}}\n@media(min-width:760px){main{grid-template-columns:1fr 1fr;align-items:start}}
 
+
+/* CSL screenshot scan */
+.scan-box{margin:0 0 18px;border:1px dashed #a8bdc8;border-radius:14px;background:#f0f5fa;padding:14px}
+.scan-upload{display:grid;gap:10px;cursor:pointer;font-size:1rem}
+.scan-upload input{position:absolute;width:1px;height:1px;opacity:0}
+.scan-upload-button{display:block;text-align:center;border-radius:10px;background:#176454;color:#fff;font-weight:750;padding:13px 16px;min-height:48px}
+.scan-file-name{color:#344e54;overflow-wrap:anywhere}
+.scan-privacy{font-size:.84rem;margin:10px 0}
+#scan-read:disabled{opacity:.55;cursor:not-allowed}
+.scan-results{margin-top:12px;padding:12px;border-radius:10px;background:#fff;border:1px solid #d6e3e0}
+.scan-results h4{margin:0 0 6px}
+.scan-results ul{margin:0;padding-left:20px}
+.scan-results li{padding:3px 0}
