@@ -252,6 +252,7 @@ async function loadSharedRecords(data) {
 }
 
 function resetForm() {
+  clearScanSelection();
   form.reset();
   editing = null;
   heading.textContent = 'New visit';
@@ -624,12 +625,7 @@ form.elements.visitType.addEventListener('change', () => {
   for (const name of ['time', 'systolic', 'diastolic', 'pulse', 'weight', 'temperature', 'hematocrit', 'protein', 'duration', 'arm', 'notes']) {
     form.elements[name].value = '';
   }
-  const preview = document.querySelector('#scan-preview');
-  if (preview.src.startsWith('blob:')) URL.revokeObjectURL(preview.src);
-  preview.removeAttribute('src');
-  preview.hidden = true;
-  document.querySelector('#scan-status').textContent = '';
-  document.querySelector('#scan-image').value = '';
+  clearScanSelection();
   status.textContent = 'Non-CSL visit selected. Other fields were cleared; the date was kept.';
 });
 
@@ -961,23 +957,37 @@ const scanFindings=document.querySelector('#scan-findings');
 let scanPreviewUrl='';
 let tesseractScriptPromise=null;
 
+function clearScanSelection(){
+  if(scanPreviewUrl)URL.revokeObjectURL(scanPreviewUrl);
+  scanPreviewUrl='';
+  scanPreview.removeAttribute('src');
+  scanPreview.hidden=true;
+  scanImage.value='';
+  scanReadButton.disabled=true;
+  document.querySelector('#scan-file-name').textContent='No screenshot selected yet';
+  scanStatus.textContent='';
+  scanResults.hidden=true;
+  scanFindings.replaceChildren();
+}
+
 scanImage.addEventListener('change',()=>{
   const file=scanImage.files?.[0];
   if(!file)return;
   if(!file.type.startsWith('image/')){
+    clearScanSelection();
     scanStatus.textContent='Choose an image file such as a CSL screenshot.';
-    scanImage.value='';
     return;
   }
   if(file.size>20*1024*1024){
+    clearScanSelection();
     scanStatus.textContent='This image is over 20 MB. Choose a smaller screenshot.';
-    scanImage.value='';
     return;
   }
   if(scanPreviewUrl)URL.revokeObjectURL(scanPreviewUrl);
   scanPreviewUrl=URL.createObjectURL(file);
   scanPreview.src=scanPreviewUrl;
   scanPreview.hidden=false;
+  document.querySelector('#scan-file-name').textContent=file.name;
   scanReadButton.disabled=false;
   scanResults.hidden=true;
   scanFindings.replaceChildren();
