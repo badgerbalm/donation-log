@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
 <link rel="stylesheet" href="style.css">
-<script src="app.js" defer></script>
+<script src="app.js?v=bp-load-feedback-20261111" defer></script>
 </head>
 <body>
 <header><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1>Donation Log</h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-expanded="false" aria-controls="app-menu">Menu</button></div></header>
@@ -26,6 +26,9 @@
 <p class="muted">CSL donation screening readings. Medication dates are shown for context.</p>
 <div id="medications" class="medications"></div>
 <div class="actions"><button type="button" class="secondary" id="toggle-bp-chart" aria-expanded="false" aria-controls="bp-chart-panel">Show BP graph</button></div>
+<p id="report-load-status" class="muted" role="status" aria-live="polite">Loading saved visit readings…</p>
+<div id="report-connection" hidden><a class="button-link" href="../">Open Daily Workout to reconnect</a></div>
+<div class="actions"><button type="button" class="secondary" id="refresh-report">Refresh readings</button></div>
 <div id="bp-chart-panel" class="chart-wrap" hidden><svg id="bp-chart" role="img" aria-label="Blood pressure readings over time"></svg></div>
 <div id="period-summary" class="period-summary"></div>
 <div class="actions"><button type="button" class="secondary" id="print-report">Print report / Save PDF</button></div>

@@ -16,6 +16,8 @@ let creatingNew = false;
 let records = [];
 let canWrite = true;
 let medicationEvents = [];
+let visitsLoadState = 'loading';
+let visitsLoadError = '';
 
 function savedSession() {
   try {
@@ -487,24 +489,38 @@ fileInput.onchange = async () => {
   finally { fileInput.value = ''; }
 };
 
+async function refreshVisits(showHistoryStatus=true) {
+  visitsLoadState='loading';
+  visitsLoadError='';
+  if(showHistoryStatus) historyStatus.textContent='Refreshing visits…';
+  drawReport();
+  try {
+    const response=await apiRequest('/visits');
+    const data=await response.json();
+    await loadSharedRecords(data);
+    visitsLoadState='loaded';
+    visitsLoadError='';
+    document.querySelector('#connection-help').hidden=true;
+    if(showHistoryStatus) historyStatus.textContent='History refreshed: '+records.length+' visits loaded.';
+  } catch(error) {
+    visitsLoadState='error';
+    visitsLoadError=error.message;
+    historyStatus.textContent=error.message;
+    document.querySelector('#connection-help').hidden=false;
+  }
+  drawReport();
+}
 resetForm();
 render();
 historyStatus.textContent='Loading your shared visits…';
-apiRequest('/visits').then(async response=>{
-  const data=await response.json();
-  await loadSharedRecords(data);
-  document.querySelector('#connection-help').hidden=true;
-}).catch(error=>{historyStatus.textContent=error.message;document.querySelector('#connection-help').hidden=false;});
+refreshVisits(false);
 apiRequest('/medications').then(async response=>{
   const data=await response.json();
   medicationEvents=Array.isArray(data.events)?data.events:[];
   drawReport();
 }).catch(()=>{medicationEvents=[];drawReport();});
-document.querySelector('#visit-refresh').addEventListener('click',async()=>{
-  historyStatus.textContent='Refreshing…';
-  try{const response=await apiRequest('/visits');const data=await response.json();await loadSharedRecords(data);historyStatus.textContent='History refreshed.';}
-  catch(error){historyStatus.textContent=error.message;}
-});
+document.querySelector('#visit-refresh').addEventListener('click',()=>refreshVisits(true));
+document.querySelector('#refresh-report').addEventListener('click',()=>refreshVisits(false));
 function drawReport() {
   const medications = document.querySelector('#medications');
   medications.replaceChildren();
@@ -518,8 +534,20 @@ function drawReport() {
   const svg = document.querySelector('#bp-chart');
   svg.replaceChildren();
   svg.setAttribute('viewBox','0 0 760 300');
+  const reportStatus=document.querySelector('#report-load-status');
+  const reportConnection=document.querySelector('#report-connection');
+  if(reportStatus) {
+    reportStatus.textContent=visitsLoadState==='loading' ? 'Loading saved visits…' :
+      visitsLoadState==='error' ? 'Could not load saved visits: '+visitsLoadError :
+      'Loaded '+records.length+' visits; '+readings.length+' have complete blood pressure readings.';
+  }
+  if(reportConnection) reportConnection.hidden=visitsLoadState!=='error';
   if (!readings.length) {
-    document.querySelector('#period-summary').textContent = 'Add blood pressure readings to see the trend.';
+    const summary=document.querySelector('#period-summary');
+    summary.textContent=visitsLoadState==='loading' ? 'Loading blood pressure readings…' :
+      visitsLoadState==='error' ? 'The trend will appear after the saved visits load.' :
+      records.length ? 'No complete blood pressure readings were found in the '+records.length+' saved visits. Check Visit history to confirm systolic and diastolic values are present.' :
+      'No saved visits yet. Add blood pressure readings to see the trend.';
     return;
   }
   const ns='http://www.w3.org/2000/svg';
