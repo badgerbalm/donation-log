@@ -8,8 +8,8 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180-v2.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
-<link rel="stylesheet" href="style.css?v=health-data-review-fix-20261112">
-<script src="app.js?v=health-data-review-fix-20261112" defer></script>
+<link rel="stylesheet" href="style.css?v=csl-screenshot-scan-20261112">
+<script src="app.js?v=csl-screenshot-scan-20261112" defer></script>
 </head>
 <body>
 <header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1>Donation Log</h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
@@ -67,6 +67,7 @@
 </div>
 <div id="entry-editor">
 <h2 id="form-title">New visit</h2>
+<div class="scan-box"><h3>Scan a CSL screenshot</h3><p class="muted">Choose a Donation Details screenshot, read it, then review the detected values in the form before saving.</p><label class="scan-upload"><span class="scan-upload-button">▧ Choose photo or file</span><span id="scan-file-name" class="scan-file-name">No screenshot selected yet</span><input type="file" id="scan-image" accept="image/*"></label><div class="actions"><button type="button" id="scan-read" disabled>Read screenshot</button></div><p class="scan-privacy muted">The screenshot is processed on this device. It is not uploaded or saved with your visit. The OCR engine and English model download when you scan.</p><p id="scan-status" role="status" aria-live="polite"></p><img id="scan-preview" alt="Selected donation screenshot preview" hidden><section id="scan-results" class="scan-results" aria-live="polite" hidden><h4>Possible readings · check each field</h4><ul id="scan-findings"></ul></section></div>
 <form id="visit">
 <fieldset class="form-step"><legend>1. Before donation</legend><div class="grid">
 <label>Visit date <input name="date" type="date" required></label>
@@ -89,7 +90,7 @@
 </form>
 <p id="status" role="status" aria-live="polite"></p>
 <div id="connection-help" class="scan-box" hidden><h3>Connect your private data</h3><p>Sign in with your Google account here. Google will return you to Donation Log after confirming your identity. Safari and the Home Screen app may each need their own sign-in.</p><button type="button" class="connect-google">Sign in to Donation Log</button><p class="muted connection-status" role="status" aria-live="polite"></p></div>
-<div class="scan-box"><h3>Scan a CSL screenshot</h3><p class="muted">Choose a Donation Details screenshot. Review the fields before saving the visit.</p><label class="upload-label">Choose screenshot<input type="file" id="scan-image" accept="image/*" capture="environment"></label><img id="scan-preview" alt="Selected donation screenshot preview" hidden><p id="scan-status" role="status"></p></div>
+
 </div>
 </section>
 <section class="card page" data-page-panel="history" aria-labelledby="history-title" hidden>
