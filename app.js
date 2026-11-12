@@ -8,7 +8,7 @@ const pendingAuthKey = 'donation-log-google-pending-v1';
 const cslDraftKey = 'donation-log-csl-progress-draft-v1';
 const authBase = 'https://daily-workout-auth.onlinesny.workers.dev';
 const fields = ['systolic', 'diastolic', 'pulse', 'weight', 'temperature', 'hematocrit', 'protein', 'duration'];
-const columns = ['date', 'time', 'visitType', ...fields, 'arm', 'notes', 'source'];
+const columns = ['date', 'time', 'visitType', ...fields, 'finger', 'arm', 'notes', 'source'];
 const form = document.querySelector('#visit');
 const status = document.querySelector('#status');
 const historyStatus = document.querySelector('#history-status');
@@ -145,9 +145,10 @@ function normalize(input) {
     throw new Error('Enter a valid visit date and time.');
   }
   const defaultVisitType = input.source === 'Personal BP log' ? 'Other BP reading' : 'CSL donation';
-  const row = { id: input.id || (input.date + ' ' + (input.time || '')), date: input.date, time: input.time || '', visitType: input.visitType || defaultVisitType, arm: input.arm || '', notes: input.notes || '', source: input.source || 'Manual entry' };
-  if (!['CSL donation', 'Doctor / clinic', 'Home reading', 'Other BP reading', 'Other'].includes(row.visitType) || !['', 'Left', 'Right', 'Both'].includes(row.arm) || typeof row.notes !== 'string' || row.notes.length > 2000) {
-    throw new Error('Check the arm and visit notes.');
+  const row = { id: input.id || (input.date + ' ' + (input.time || '')), date: input.date, time: input.time || '', visitType: input.visitType || defaultVisitType, finger: input.finger || '', arm: input.arm || '', notes: input.notes || '', source: input.source || 'Manual entry' };
+  const validFingers = ['', 'Left thumb', 'Left index', 'Left middle', 'Left ring', 'Left little', 'Right thumb', 'Right index', 'Right middle', 'Right ring', 'Right little'];
+  if (!['CSL donation', 'Doctor / clinic', 'Home reading', 'Other BP reading', 'Other'].includes(row.visitType) || !validFingers.includes(row.finger) || !['', 'Left', 'Right', 'Both'].includes(row.arm) || typeof row.notes !== 'string' || row.notes.length > 2000) {
+    throw new Error('Check the screening finger, donation arm, and visit notes.');
   }
   for (const field of fields) {
     const value = input[field];
@@ -209,7 +210,7 @@ async function restoreCslDraft(){
   editing=existing?visitKey(existing):null;
   creatingNew=true;
   scanWasRead=Boolean(draft.scanWasRead);
-  for(const name of ['id','date','visitType',...fields,'arm','notes']){
+  for(const name of ['id','date','visitType',...fields,'finger','arm','notes']){
     if(form.elements[name])form.elements[name].value=draft[name]??'';
   }
   form.elements.id.value=draft.id;
@@ -284,7 +285,7 @@ async function loadSharedRecords(data) {
     const index=cleaned.findIndex(row=>row!==manual&&row.source!=='Manual entry'&&row.visitType===manual.visitType&&dateTimeKey(row)===dateTimeKey(manual));
     if(index<0)continue;
     const imported=cleaned[index];
-    const mergeFields=[...fields,'arm'];
+    const mergeFields=[...fields,'finger','arm'];
     const hasValue=value=>value!==null&&value!==undefined&&value!=='';
     const conflicts=mergeFields.some(field=>hasValue(imported[field])&&hasValue(manual[field])&&String(imported[field])!==String(manual[field]))||Boolean(imported.notes&&manual.notes&&imported.notes!==manual.notes&&(imported.notes+' | '+manual.notes).length>2000);
     if(conflicts){retainedConflicts++;continue;}
@@ -401,7 +402,7 @@ function renderWorkflow() {
       description.textContent = 'Keep this QR visible while CSL scans it at the front desk.';
     } else if (phase === 'details') {
       heading.textContent = 'Before Donation';
-      description.textContent = 'Enter your arm and CSL screening values before donation. Progress saves on this device as you go.';
+      description.textContent = 'Enter the finger used for screening and the arm planned for donation. Progress saves on this device as you go.';
     } else if (phase === 'duration') {
       heading.textContent = 'Donation Duration';
       description.textContent = 'After your donation, enter how long it took. Progress saves on this device as you go.';
@@ -421,7 +422,8 @@ function renderWorkflow() {
   if (isCsl && phase === 'duration') {
     document.querySelector('#screening-summary').textContent = [
       row?.date ? new Date(row.date + 'T12:00:00').toLocaleDateString() : '',
-      row?.arm ? row.arm + ' arm' : '',
+      row?.finger ? 'Finger stick ' + row.finger : '',
+      row?.arm ? 'Donation arm ' + row.arm : '',
       row?.hematocrit !== null && row?.hematocrit !== undefined ? 'Hematocrit ' + row.hematocrit + '%' : '',
       row?.protein !== null && row?.protein !== undefined ? 'Protein ' + row.protein.toFixed(1) + ' g/dL' : ''
     ].filter(Boolean).join(' · ');
@@ -447,7 +449,8 @@ function renderLastVisitSummary() {
   }
   date.textContent = new Date(row.date + 'T12:00:00').toLocaleDateString(undefined, {month:'short',day:'numeric',year:'numeric'});
   details.textContent = [
-    row.arm ? 'Arm ' + row.arm : '',
+    row.finger ? 'Finger stick ' + row.finger : '',
+    row.arm ? 'Donation arm ' + row.arm : '',
     row.hematocrit !== null ? 'Hematocrit ' + row.hematocrit + '%' : '',
     row.protein !== null ? 'Protein ' + row.protein.toFixed(1) + ' g/dL' : '',
     row.duration !== null ? 'Duration ' + row.duration + ' min' : ''
@@ -459,7 +462,7 @@ function renderPriorVisitSummary() {
   const details = document.querySelector('#prior-visit-details');
   if (!prior) { date.textContent = 'No previous CSL visit'; details.textContent = 'Your last donation summary will appear here.'; return; }
   date.textContent = new Date(prior.date + 'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
-  details.textContent = [prior.arm ? 'Arm: ' + prior.arm : '', prior.hematocrit !== null ? 'Hematocrit: ' + prior.hematocrit + '%' : '', prior.protein !== null ? 'Protein: ' + prior.protein.toFixed(1) + ' g/dL' : '', prior.duration !== null ? 'Duration: ' + prior.duration + ' min' : ''].filter(Boolean).join(' · ');
+  details.textContent = [prior.finger ? 'Finger stick: ' + prior.finger : '', prior.arm ? 'Donation arm: ' + prior.arm : '', prior.hematocrit !== null ? 'Hematocrit: ' + prior.hematocrit + '%' : '', prior.protein !== null ? 'Protein: ' + prior.protein.toFixed(1) + ' g/dL' : '', prior.duration !== null ? 'Duration: ' + prior.duration + ' min' : ''].filter(Boolean).join(' · ');
 }
 function resetForm() {
   clearScanSelection();
@@ -547,7 +550,8 @@ function renderEntryDashboard() {
     if (row.visitType === 'CSL donation') item.append(createDonationDropIcon());
     const summary = document.createElement('p');
     const details = [row.time || (needsDonationDetails(row) ? 'In progress' : 'Time not entered'), row.visitType];
-    if (row.arm) details.push('Arm ' + row.arm);
+    if (row.finger) details.push('Finger stick ' + row.finger);
+    if (row.arm) details.push('Donation arm ' + row.arm);
     if (row.hematocrit !== null) details.push('Hematocrit ' + row.hematocrit + '%');
     if (row.protein !== null) details.push('Protein ' + row.protein.toFixed(1) + ' g/dL');
     if (row.duration !== null) details.push(row.duration + ' min');
@@ -621,7 +625,7 @@ function renderHistoryTable(){
   const body=document.querySelector('#history-table tbody');body.replaceChildren();
   for(const row of [...records].sort((a,b)=>visitKey(b).localeCompare(visitKey(a)))){
     const tr=document.createElement('tr');
-    const values=[row.date,row.visitType,(row.systolic??'')+'/'+(row.diastolic??''),row.pulse,row.weight,row.temperature,row.hematocrit,row.protein,[row.arm,row.duration===null?'':row.duration+' min'].filter(Boolean).join(' · '),row.notes];
+    const values=[row.date,row.visitType,(row.systolic??'')+'/'+(row.diastolic??''),row.pulse,row.weight,row.temperature,row.finger,row.hematocrit,row.protein,[row.arm? 'Donation arm: '+row.arm:'',row.duration===null?'':row.duration+' min'].filter(Boolean).join(' · '),row.notes];
     for(const value of values){const td=document.createElement('td');td.textContent=value===null?'':String(value);tr.append(td);}
     body.append(tr);
   }
@@ -858,8 +862,8 @@ form.addEventListener('submit', async event => {
   try {
     const type = form.elements.visitType.value;
     if (type === 'CSL donation' && entryPhase === 'details') {
-      if (!form.elements.arm.value || !form.elements.hematocrit.value || !form.elements.protein.value) {
-        throw new Error('Enter the arm, hematocrit, and total protein before continuing.');
+      if (!form.elements.finger.value || !form.elements.arm.value || !form.elements.hematocrit.value || !form.elements.protein.value) {
+        throw new Error('Select the screening finger and donation arm, then enter hematocrit and total protein before continuing.');
       }
       const row = await persistCurrentVisit();
       entryPhase = 'duration';
@@ -919,11 +923,11 @@ form.elements.visitType.addEventListener('change', () => {
   const isCsl = form.elements.visitType.value === 'CSL donation';
   if (isCsl) {
     form.elements.arm.value = defaultArm();
-    for (const name of ['time','systolic','diastolic','pulse','weight','temperature','duration','notes']) form.elements[name].value = '';
+    for (const name of ['time','systolic','diastolic','pulse','weight','temperature','duration','notes','finger']) form.elements[name].value = '';
     entryPhase = 'intake';
     status.textContent = 'CSL selected. Open the CSL intake form when you are ready.';
   } else {
-    for (const name of ['time','systolic','diastolic','pulse','weight','temperature','hematocrit','protein','duration','arm']) form.elements[name].value = '';
+    for (const name of ['time','systolic','diastolic','pulse','weight','temperature','hematocrit','protein','duration','arm','finger']) form.elements[name].value = '';
     entryPhase = 'other';
     status.textContent = 'Doctor or Other selected. CSL-only fields were cleared; scan a visit summary or enter notes.';
   }
@@ -957,7 +961,7 @@ function csvValue(value) {
 
 document.querySelector('#csv').onclick = () => {
   const rows = [...records].sort((a,b) => visitKey(a).localeCompare(visitKey(b)));
-  const headers={date:'Date',time:'Time',visitType:'Visit type',systolic:'Systolic BP',diastolic:'Diastolic BP',pulse:'Pulse (bpm)',weight:'Weight (lb)',temperature:'Temperature (°F)',hematocrit:'Hematocrit',protein:'Total protein (g/dL)',duration:'Duration (min)',arm:'Arm',notes:'Notes',source:'Source'};
+  const headers={date:'Date',time:'Time',visitType:'Visit type',systolic:'Systolic BP',diastolic:'Diastolic BP',pulse:'Pulse (bpm)',weight:'Weight (lb)',temperature:'Temperature (°F)',hematocrit:'Hematocrit',protein:'Total protein (g/dL)',duration:'Duration (min)',finger:'Screening finger',arm:'Donation arm',notes:'Notes',source:'Source'};
   const lines = [columns.map(key=>csvValue(headers[key]||key)).join(','), ...rows.map(row => columns.map(key => csvValue(row[key])).join(','))];
   download('donation-visits.csv', lines.join('\r\n') + '\r\n', 'text/csv');
 };
