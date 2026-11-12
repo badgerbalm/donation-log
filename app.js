@@ -402,6 +402,28 @@ function needsDonationDetails(row) {
   const legacyPreDonation = !row.id?.startsWith('donation-log-') && !row.time && row.arm && (row.hematocrit !== null || row.protein !== null) && row.systolic === null && row.diastolic === null && row.pulse === null && row.weight === null && row.temperature === null;
   return Boolean(legacyPreDonation || (row.id?.startsWith('donation-log-') && (row.duration === null || (row.time === '' && row.systolic === null && row.diastolic === null && row.pulse === null && row.weight === null && row.temperature === null))));
 }
+function createDonationDropIcon(className = 'pending-visit-icon') {
+  const wrapper = document.createElement('span');
+  wrapper.className = className;
+  wrapper.setAttribute('aria-hidden', 'true');
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 64 64');
+  svg.setAttribute('focusable', 'false');
+  const drop = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  drop.setAttribute('d', 'M32 4C25 15 12 28 12 40a20 20 0 0 0 40 0C52 28 39 15 32 4Z');
+  drop.setAttribute('fill', '#ff3349');
+  drop.setAttribute('stroke', '#fff');
+  drop.setAttribute('stroke-width', '4');
+  const shine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  shine.setAttribute('d', 'M24 39c0 5 3 9 8 11');
+  shine.setAttribute('fill', 'none');
+  shine.setAttribute('stroke', '#fff');
+  shine.setAttribute('stroke-width', '4');
+  shine.setAttribute('stroke-linecap', 'round');
+  svg.append(drop, shine);
+  wrapper.append(svg);
+  return wrapper;
+}
 function renderEntryDashboard() {
   const panel = document.querySelector('#pending-visits');
   if (!panel) return;
@@ -414,7 +436,8 @@ function renderEntryDashboard() {
   document.querySelector('#today-empty-state').hidden = todaysVisits.length > 0;
   for (const row of todaysVisits) {
     const item = document.createElement('div');
-    item.className = 'pending-visit';
+    item.className = 'pending-visit' + (row.visitType === 'CSL donation' ? ' csl-visit' : '');
+    if (row.visitType === 'CSL donation') item.append(createDonationDropIcon());
     const summary = document.createElement('p');
     const details = [row.time || (needsDonationDetails(row) ? 'In progress' : 'Time not entered'), row.visitType];
     if (row.arm) details.push('Arm ' + row.arm);

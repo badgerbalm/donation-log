@@ -175,3 +175,10 @@ body:not(.menu-open) main button.secondary{background:#e5f6f2;color:#07584f;bord
  .last-visit-details{font-size:.92rem}
  .workflow-stepper li{font-size:.75rem}
 }
+
+/* CSL visit tile blood-drop mark */
+.last-visit-icon svg{display:block;width:44px;height:52px}
+.pending-visit.csl-visit{align-items:center}
+.pending-visit-icon{flex:0 0 48px;width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:#d5f7ef}
+.pending-visit-icon svg{display:block;width:30px;height:36px}
+.pending-visit.csl-visit>p{flex:1 1 220px}
