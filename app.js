@@ -823,6 +823,31 @@ function drawReport() {
 }
 drawReport();
 document.querySelector('#print-report').addEventListener('click',()=>window.print());
+document.querySelector('#save-chart-image').addEventListener('click',async()=>{
+  const status=document.querySelector('#export-status');
+  const svg=document.querySelector('#bp-chart');
+  if(!svg.querySelector('polyline')){status.textContent='Load blood pressure readings and show the graph before saving an image.';return;}
+  try{
+    const markup=new XMLSerializer().serializeToString(svg);
+    const source=new Blob([markup],{type:'image/svg+xml;charset=utf-8'});
+    const url=URL.createObjectURL(source);
+    const image=new Image();
+    image.onload=async()=>{
+      try{
+        const canvas=document.createElement('canvas');canvas.width=1520;canvas.height=720;
+        const context=canvas.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);
+        const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+        if(!png)throw new Error('Image export failed');
+        const file=new File([png],'blood-pressure-trend.png',{type:'image/png'});
+        if(navigator.canShare?.({files:[file]})&&navigator.share){await navigator.share({files:[file],title:'Blood pressure trend'});status.textContent='Choose Save Image in the share sheet to add the chart to Photos.';}
+        else{const link=document.createElement('a');link.href=URL.createObjectURL(png);link.download=file.name;link.click();status.textContent='Chart image downloaded. Open it and use Share → Save Image to add it to Photos.';}
+      }catch(error){if(error.name!=='AbortError')status.textContent='Could not create the chart image. Try Print / Save report as PDF instead.';}
+      finally{URL.revokeObjectURL(url);}
+    };
+    image.onerror=()=>{URL.revokeObjectURL(url);status.textContent='Could not create the chart image. Try Print / Save report as PDF instead.';};
+    image.src=url;
+  }catch{status.textContent='Could not create the chart image. Try Print / Save report as PDF instead.';}
+});
 const menu=document.querySelector('#app-menu');
 const menuButton=document.querySelector('#menu-open');
 function closeMenu(){if(menu.open)menu.close();menuButton.setAttribute('aria-expanded','false');}
