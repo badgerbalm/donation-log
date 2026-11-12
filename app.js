@@ -953,33 +953,209 @@ chartToggle.addEventListener('click',()=>{
 });
 
 const scanImage=document.querySelector('#scan-image');
-scanImage.addEventListener('change',async()=>{
-  const file=scanImage.files?.[0]; if(!file)return;
-  const preview=document.querySelector('#scan-preview');
-  if(preview.src.startsWith('blob:'))URL.revokeObjectURL(preview.src);
-  preview.src=URL.createObjectURL(file);preview.hidden=false;
-  const message=document.querySelector('#scan-status');
-  message.textContent='Screenshot opened for review. Fill the visit fields from the image, then save the visit.';
-  const Detector=window.TextDetector;
-  if(Detector){
-    try{
-      const detector=new Detector();const text=await detector.detect(preview);
-      const combined=text.map(part=>part.rawValue).join(' ');
-      const bp=combined.match(/(\d{2,3})\s*[\/]\s*(\d{2,3})/);
-      const date=combined.match(/(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i);
-      const weight=combined.match(/(\d{2,3})\s*lbs?/i);
-      const pulse=combined.match(/(\d{2,3})\s*beats?\s*\/\s*min/i);
-      const temperature=combined.match(/(\d{2,3}(?:\.\d)?)\s*°?\s*F\b/i);
-      const time=combined.match(/\b(\d{1,2}):(\d{2})\s*(AM|PM)\b/i);
-      if(bp){form.elements.systolic.value=bp[1];form.elements.diastolic.value=bp[2];}
-      if(weight)form.elements.weight.value=weight[1];
-      if(pulse)form.elements.pulse.value=pulse[1];
-      if(temperature)form.elements.temperature.value=temperature[1];
-      if(time){let hour=Number(time[1])%12;if(time[3].toUpperCase()==='PM')hour+=12;form.elements.time.value=String(hour).padStart(2,'0')+':'+time[2];}
-      if(date){const parsed=new Date(date[0]);if(!Number.isNaN(parsed.valueOf()))form.elements.date.value=parsed.toISOString().slice(0,10);}
-      message.textContent=bp?'Possible readings filled in. Check every field against the screenshot before saving.':'Screenshot opened. Check the date and readings in the image and enter them in the form.';
-    }catch{message.textContent='Screenshot opened. Check the date and readings in the image and enter them in the form.';}
+const scanReadButton=document.querySelector('#scan-read');
+const scanPreview=document.querySelector('#scan-preview');
+const scanStatus=document.querySelector('#scan-status');
+const scanResults=document.querySelector('#scan-results');
+const scanFindings=document.querySelector('#scan-findings');
+let scanPreviewUrl='';
+let tesseractScriptPromise=null;
+
+scanImage.addEventListener('change',()=>{
+  const file=scanImage.files?.[0];
+  if(!file)return;
+  if(!file.type.startsWith('image/')){
+    scanStatus.textContent='Choose an image file such as a CSL screenshot.';
+    scanImage.value='';
+    return;
   }
-  scanImage.value='';
+  if(file.size>20*1024*1024){
+    scanStatus.textContent='This image is over 20 MB. Choose a smaller screenshot.';
+    scanImage.value='';
+    return;
+  }
+  if(scanPreviewUrl)URL.revokeObjectURL(scanPreviewUrl);
+  scanPreviewUrl=URL.createObjectURL(file);
+  scanPreview.src=scanPreviewUrl;
+  scanPreview.hidden=false;
+  scanReadButton.disabled=false;
+  scanResults.hidden=true;
+  scanFindings.replaceChildren();
+  scanStatus.textContent='Screenshot ready. Tap “Read screenshot” to extract possible readings.';
 });
+
+function loadTesseract(){
+  if(window.Tesseract)return Promise.resolve(window.Tesseract);
+  if(!tesseractScriptPromise){
+    tesseractScriptPromise=new Promise((resolve,reject)=>{
+      const script=document.createElement('script');
+      script.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+      script.crossOrigin='anonymous';
+      script.onload=()=>window.Tesseract?resolve(window.Tesseract):reject(new Error('The OCR library did not load.'));
+      script.onerror=()=>reject(new Error('Could not download the OCR library. Check your internet connection and try again.'));
+      document.head.append(script);
+    }).catch(error=>{tesseractScriptPromise=null;throw error;});
+  }
+  return tesseractScriptPromise;
+}
+
+function ocrSection(text,label,nextLabels){
+  const match=label.exec(text);
+  if(!match)return '';
+  const contentStart=match.index+match[0].length;
+  let contentEnd=text.length;
+  for(const next of nextLabels){
+    const found=next.exec(text);
+    if(found&&found.index>=contentStart&&found.index<contentEnd)contentEnd=found.index;
+  }
+  return text.slice(contentStart,contentEnd);
+}
+
+function parseDonationScreenshot(text){
+  const normalized=text.replace(/\r/g,'\n').replace(/[|]/g,'/').replace(/[•·]/g,' ');
+  const parseMetric=(label,nextLabels,valuePattern)=>{
+    const section=ocrSection(normalized,label,nextLabels);
+    const match=valuePattern.exec(section);
+    return match?match.slice(1):null;
+  };
+  const dateMatch=normalized.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(20\d{2})\b/i);
+  let date='';
+  if(dateMatch){
+    const month=['january','february','march','april','may','june','july','august','september','october','november','december'].indexOf(dateMatch[1].toLowerCase());
+    date=dateMatch[3]+'-'+String(month+1).padStart(2,'0')+'-'+String(Number(dateMatch[2])).padStart(2,'0');
+  }
+  const rawTime=normalized.match(/\b(\d{1,2}):(\d{2})\s*(AM|PM)\b/i);
+  let time='';
+  if(rawTime){
+    let hour=Number(rawTime[1])%12;
+    if(rawTime[3].toUpperCase()==='PM')hour+=12;
+    time=String(hour).padStart(2,'0')+':'+rawTime[2];
+  }
+  const bp=parseMetric(/Blood\s*Pressure\b/i,[/Pulse\s*Rate\b/i,/Weight\b/i,/Temperature\b/i],/(\d{2,3})\s*[/:]\s*(\d{2,3})/);
+  const weight=parseMetric(/Weight\b/i,[/Blood\s*Pressure\b/i,/Pulse\s*Rate\b/i,/Temperature\b/i],/(\d{2,3})\s*(?:lbs?\b|pounds?\b)/i);
+  const pulse=parseMetric(/Pulse\s*Rate\b/i,[/Weight\b/i,/Blood\s*Pressure\b/i,/Temperature\b/i],/(\d{2,3})\s*(?:beats?\s*\/\s*min|bpm)\b/i);
+  const temperature=parseMetric(/Temperature\b/i,[/Weight\b/i,/Blood\s*Pressure\b/i,/Pulse\s*Rate\b/i],/(\d{2,3}(?:[.,]\d)?)\s*(?:°\s*)?F\b/i);
+  const number=(value,min,max,decimals=false)=>{
+    if(!value)return null;
+    const parsed=Number(String(value[0]).replace(',','.'));
+    return Number.isFinite(parsed)&&parsed>=min&&parsed<=max&&(decimals||Number.isInteger(parsed))?parsed:null;
+  };
+  let systolic=number(bp?.[0],60,300);
+  let diastolic=number(bp?.[1],30,200);
+  if(systolic!==null&&diastolic!==null&&systolic<=diastolic){systolic=null;diastolic=null;}
+  return {
+    date:date||null,
+    time:time||null,
+    systolic,
+    diastolic,
+    pulse:number(pulse,25,220),
+    weight:number(weight,50,500,true),
+    temperature:number(temperature,80,110,true)
+  };
+}
+
+function formatScanValue(name,value){
+  if(value===null||value===undefined)return 'Not found';
+  if(name==='date')return value;
+  if(name==='time')return value;
+  if(name==='bloodPressure')return value.systolic+'/'+value.diastolic+' mm Hg';
+  if(name==='pulse')return value+' bpm';
+  if(name==='weight')return value+' lb';
+  if(name==='temperature')return value+' °F';
+  return String(value);
+}
+
+function applyScanFindings(found){
+  const fields=[
+    ['date','Visit date','date'],
+    ['time','Visit time','time'],
+    ['bloodPressure','Blood pressure',null],
+    ['pulse','Pulse','pulse'],
+    ['weight','Weight','weight'],
+    ['temperature','Temperature','temperature']
+  ];
+  const values={
+    date:found.date,
+    time:found.time,
+    bloodPressure:found.systolic!==null&&found.diastolic!==null?found:null,
+    pulse:found.pulse,
+    weight:found.weight,
+    temperature:found.temperature
+  };
+  const targets={
+    date:'date',time:'time',pulse:'pulse',weight:'weight',temperature:'temperature'
+  };
+  let inserted=0;
+  scanFindings.replaceChildren();
+  for(const [key,label,field] of fields){
+    const value=values[key];
+    const item=document.createElement('li');
+    if(value===null){
+      item.textContent=label+': not detected';
+    }else if(field){
+      const input=form.elements[targets[key]];
+      if(!input.value){
+        input.value=value;
+        inserted++;
+        item.textContent=label+': '+formatScanValue(key,value)+' · added to the form';
+      }else if(input.value===String(value)){
+        item.textContent=label+': '+formatScanValue(key,value)+' · matches the form';
+      }else{
+        item.textContent=label+': screenshot shows '+formatScanValue(key,value)+'; form has '+input.value+' · kept the existing form value';
+      }
+    }else{
+      const systolic=form.elements.systolic,diastolic=form.elements.diastolic;
+      const existing=systolic.value||diastolic.value;
+      if(!existing){
+        systolic.value=value.systolic;
+        diastolic.value=value.diastolic;
+        inserted+=2;
+        item.textContent=label+': '+formatScanValue(key,value)+' · added to the form';
+      }else if(systolic.value===String(value.systolic)&&diastolic.value===String(value.diastolic)){
+        item.textContent=label+': '+formatScanValue(key,value)+' · matches the form';
+      }else{
+        item.textContent=label+': screenshot shows '+formatScanValue(key,value)+'; form has '+(systolic.value||'—')+'/'+(diastolic.value||'—')+' · kept the existing form values';
+      }
+    }
+    scanFindings.append(item);
+  }
+  scanResults.hidden=false;
+  return inserted;
+}
+
+scanReadButton.addEventListener('click',async()=>{
+  const file=scanImage.files?.[0];
+  if(!file)return;
+  scanReadButton.disabled=true;
+  scanStatus.textContent='Loading the on-device OCR engine…';
+  scanResults.hidden=true;
+  let worker;
+  try{
+    const Tesseract=await loadTesseract();
+    worker=await Tesseract.createWorker('eng',1,{
+      workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
+      corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@v5.0.0',
+      langPath:'https://tessdata.projectnaptha.com/4.0.0',
+      logger:progress=>{
+        if(progress.status==='loading tesseract core')scanStatus.textContent='Preparing the on-device text reader…';
+        else if(progress.status==='loading language traineddata')scanStatus.textContent='Downloading the English text model…';
+        else if(progress.status==='recognizing text')scanStatus.textContent='Reading screenshot… '+Math.round((progress.progress||0)*100)+'%';
+      }
+    });
+    const result=await worker.recognize(file);
+    const found=parseDonationScreenshot(result.data.text||'');
+    const inserted=applyScanFindings(found);
+    const count=[found.date,found.time,found.systolic!==null&&found.diastolic!==null?true:null,found.pulse,found.weight,found.temperature].filter(value=>value!==null&&value!==undefined).length;
+    if(!count)scanStatus.textContent='No labeled readings were recognized. Keep the preview open and enter the values manually.';
+    else scanStatus.textContent='Found '+count+' possible item'+(count===1?'':'s')+'; '+inserted+' blank form field'+(inserted===1?' was':'s were')+' filled. Check the screenshot and every form value before saving.';
+    if(result.data.confidence<65&&count)scanStatus.textContent+=' OCR confidence was low, so review especially carefully.';
+  }catch(error){
+    scanStatus.textContent=error?.message||'Could not read this screenshot. You can still use the preview and enter values manually.';
+  }finally{
+    if(worker)await worker.terminate().catch(()=>{});
+    scanReadButton.disabled=false;
+  }
+});
+window.addEventListener('pagehide',()=>{if(scanPreviewUrl)URL.revokeObjectURL(scanPreviewUrl);});
+
 
