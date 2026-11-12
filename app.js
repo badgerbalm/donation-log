@@ -824,7 +824,7 @@ function drawReport() {
 drawReport();
 function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight){
   let line='';
-  for(const word of String(text).split(/\\s+/)){const candidate=line?line+' '+word:word;if(ctx.measureText(candidate).width>maxWidth&&line){ctx.fillText(line,x,y);line=word;y+=lineHeight;}else line=candidate;}
+  for(const word of String(text).split(/\s+/)){const candidate=line?line+' '+word:word;if(ctx.measureText(candidate).width>maxWidth&&line){ctx.fillText(line,x,y);line=word;y+=lineHeight;}else line=candidate;}
   if(line)ctx.fillText(line,x,y);
   return y+lineHeight;
 }
@@ -835,29 +835,28 @@ async function createReportPdf(){
   ctx.fillStyle='#526567';ctx.font='25px system-ui,sans-serif';ctx.fillText('CSL donation screening readings · mm Hg',72,140);
   let y=205;
   const medText=[...document.querySelectorAll('#medications .medication')].map(node=>node.textContent.trim());
-  ctx.font='23px system-ui,sans-serif';ctx.fillStyle='#17252b';
+  ctx.font='23px system-ui,sans-serif';
   for(const item of medText){ctx.fillStyle='#fff5f1';ctx.fillRect(72,y-32,1096,78);ctx.fillStyle='#17252b';y=wrapCanvasText(ctx,item,92,y,1045,31)+12;}
-  const status=document.querySelector('#report-load-status')?.textContent?.trim();ctx.fillStyle='#526567';ctx.font='21px system-ui,sans-serif';y=wrapCanvasText(ctx,status||'',72,y+10,1096,29);
+  const reportStatus=document.querySelector('#report-load-status')?.textContent?.trim();ctx.fillStyle='#526567';ctx.font='21px system-ui,sans-serif';y=wrapCanvasText(ctx,reportStatus||'',72,y+10,1096,29);
   ctx.fillStyle='#17252b';ctx.font='bold 25px system-ui,sans-serif';ctx.fillText('Blood pressure trend',72,y+36);
   const svg=document.querySelector('#bp-chart');const markup=new XMLSerializer().serializeToString(svg);const url=URL.createObjectURL(new Blob([markup],{type:'image/svg+xml;charset=utf-8'}));
   try{const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url;});ctx.drawImage(image,72,y+55,1096,432);}finally{URL.revokeObjectURL(url);}
-  y+=530;
-  ctx.fillStyle='#526567';ctx.font='22px system-ui,sans-serif';
+  y+=530;ctx.fillStyle='#526567';ctx.font='22px system-ui,sans-serif';
   for(const item of [...document.querySelectorAll('#period-summary>*')]){y=wrapCanvasText(ctx,item.textContent,72,y,1096,31)+14;}
   ctx.font='18px system-ui,sans-serif';ctx.fillStyle='#667';ctx.fillText('Prepared '+new Date().toLocaleDateString(),72,1688);
   const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.94));if(!jpeg)throw new Error('PDF image creation failed');
-  const jpg=new Uint8Array(await jpeg.arrayBuffer());const enc=new TextEncoder();const parts=[];let size=0;const offsets=[0];
+  const jpg=new Uint8Array(await jpeg.arrayBuffer());const enc=new TextEncoder();const parts=[];let size=0;const offsets=[0];const NL=String.fromCharCode(10);
   const push=chunk=>{const bytes=typeof chunk==='string'?enc.encode(chunk):chunk;parts.push(bytes);size+=bytes.length;};
-  push('%PDF-1.4\n%âãÏÓ\n');
+  push('%PDF-1.4'+NL+'%PDFbinary'+NL);
   const objects=[
-    '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
-    '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
-    '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n',
+    '1 0 obj'+NL+'<< /Type /Catalog /Pages 2 0 R >>'+NL+'endobj'+NL,
+    '2 0 obj'+NL+'<< /Type /Pages /Kids [3 0 R] /Count 1 >>'+NL+'endobj'+NL,
+    '3 0 obj'+NL+'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>'+NL+'endobj'+NL,
     null,
-    '5 0 obj\n<< /Length 36 >>\nstream\nq 595 0 0 842 0 0 cm /Im0 Do Q\nendstream\nendobj\n'
+    '5 0 obj'+NL+'<< /Length 36 >>'+NL+'stream'+NL+'q 595 0 0 842 0 0 cm /Im0 Do Q'+NL+'endstream'+NL+'endobj'+NL
   ];
-  for(let i=0;i<objects.length;i++){offsets.push(size);if(i===3){push('4 0 obj\n<< /Type /XObject /Subtype /Image /Width '+canvas.width+' /Height '+canvas.height+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n');push(jpg);push('\nendstream\nendobj\n');}else push(objects[i]);}
-  const xref=size;push('xref\n0 6\n0000000000 65535 f \n');for(let i=1;i<=5;i++)push(String(offsets[i]).padStart(10,'0')+' 00000 n \n');push('trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF');
+  for(let i=0;i<objects.length;i++){offsets.push(size);if(i===3){push('4 0 obj'+NL+'<< /Type /XObject /Subtype /Image /Width '+canvas.width+' /Height '+canvas.height+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>'+NL+'stream'+NL);push(jpg);push(NL+'endstream'+NL+'endobj'+NL);}else push(objects[i]);}
+  const xref=size;push('xref'+NL+'0 6'+NL+'0000000000 65535 f '+NL);for(let i=1;i<=5;i++)push(String(offsets[i]).padStart(10,'0')+' 00000 n '+NL);push('trailer'+NL+'<< /Size 6 /Root 1 0 R >>'+NL+'startxref'+NL+xref+NL+'%%EOF');
   return new Blob(parts,{type:'application/pdf'});
 }
 document.querySelector('#print-report').addEventListener('click',async()=>{
