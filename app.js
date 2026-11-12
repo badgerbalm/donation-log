@@ -175,7 +175,6 @@ function defaultArm() {
 async function save(next, options = {}) {
   if (!canWrite) throw new Error('Existing browser storage could not be read. Changes are disabled.');
   await apiRequest('/visits',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({records:next,replace:options.replace===true})});
-  try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch {}
   records = next;
   render();
   if (typeof drawReport === 'function') drawReport();
@@ -191,7 +190,6 @@ async function deleteVisit(row) {
     if (!result.ok) throw new Error(detail.error || 'Could not delete this visit from the shared database.');
     if (!detail.deleted) throw new Error('This visit was not found in the shared database. Refresh the visit list and try again.');
     records = records.filter(item => visitKey(item) !== key);
-    try { localStorage.setItem(storageKey, JSON.stringify(records)); } catch {}
     render();
     if (typeof drawReport === 'function') drawReport();
     const message = 'Deleted visit for ' + label + '.';
@@ -218,16 +216,36 @@ async function loadSharedRecords(data) {
       correctedLabels++;
     }
   }
-  const importedKeys=new Set(loaded.filter(row=>row.source!=='Manual entry').map(dateTimeKey));
-  const cleaned=loaded.filter(row=>!(row.source==='Manual entry'&&row.id===dateTimeKey(row)&&importedKeys.has(dateTimeKey(row))));
+  const cleaned=[...loaded];
+  const duplicateIdsToDelete=[];
+  let mergedDuplicates=0;
+  let retainedConflicts=0;
+  for(const manual of loaded.filter(row=>row.source==='Manual entry'&&row.id===dateTimeKey(row))){
+    if(!cleaned.includes(manual))continue;
+    const index=cleaned.findIndex(row=>row!==manual&&row.source!=='Manual entry'&&row.visitType===manual.visitType&&dateTimeKey(row)===dateTimeKey(manual));
+    if(index<0)continue;
+    const imported=cleaned[index];
+    const mergeFields=[...fields,'arm'];
+    const hasValue=value=>value!==null&&value!==undefined&&value!=='';
+    const conflicts=mergeFields.some(field=>hasValue(imported[field])&&hasValue(manual[field])&&String(imported[field])!==String(manual[field]));
+    if(conflicts){retainedConflicts++;continue;}
+    const merged={...imported};
+    for(const field of mergeFields)if(!hasValue(merged[field])&&hasValue(manual[field]))merged[field]=manual[field];
+    if(manual.notes&&manual.notes!==imported.notes)merged.notes=imported.notes?[imported.notes,manual.notes].filter(Boolean).join(' | '):manual.notes;
+    cleaned[index]=merged;
+    cleaned.splice(cleaned.indexOf(manual),1);
+    duplicateIdsToDelete.push(visitKey(manual));
+    mergedDuplicates++;
+  }
   records=cleaned;render();drawReport();
   if(!editing) form.elements.arm.value=defaultArm();
-  if(cleaned.length!==loaded.length||correctedLabels){
-    const removed=loaded.length-cleaned.length;
-    await save(cleaned,{replace:true});
+  if(duplicateIdsToDelete.length||correctedLabels){
+    await save(cleaned);
+    for(const id of duplicateIdsToDelete)await apiRequest('/visits',{method:'DELETE',headers:{'content-type':'application/json'},body:JSON.stringify({id})});
     const messages=['Loaded '+cleaned.length+' visits'];
     if(correctedLabels)messages.push('corrected Hematocrit and Total protein labels on '+correctedLabels+' spreadsheet rows');
-    if(removed)messages.push('removed '+removed+' duplicate legacy copies');
+    if(mergedDuplicates)messages.push('merged '+mergedDuplicates+' duplicate legacy copies while preserving their entered details');
+    if(retainedConflicts)messages.push('kept '+retainedConflicts+' same-date records separate because their values differ');
     historyStatus.textContent=messages.join('; ')+'.';
   }
 }
@@ -722,6 +740,7 @@ async function refreshVisits(showHistoryStatus=true) {
     const response=await apiRequest('/visits');
     const data=await response.json();
     await loadSharedRecords(data);
+    try { localStorage.removeItem(storageKey); } catch {}
     visitsLoadState='loaded';
     visitsLoadError='';
     document.querySelector('#connection-help').hidden=true;
@@ -781,7 +800,7 @@ function drawReport() {
   const rangeCount=document.querySelector('#bp-chart-count');if(rangeCount)rangeCount.textContent=readings.length+' of '+allReadings.length+' readings';
   const svg = document.querySelector('#bp-chart');
   svg.replaceChildren();
-  svg.setAttribute('viewBox','0 0 760 300');
+  svg.setAttribute('viewBox','0 0 760 320');
   const reportStatus=document.querySelector('#report-load-status');
   const reportConnection=document.querySelector('#report-connection');
   if(reportStatus) {
@@ -799,29 +818,46 @@ function drawReport() {
     return;
   }
   const ns='http://www.w3.org/2000/svg';
-  const x=i=>62+(readings.length===1?0:i*640/(readings.length-1));
-  const y=v=>250-(v-60)*2.1;
-  for (const tick of [60,80,100,120,140,160,180]) {
-    const line=document.createElementNS(ns,'line'); line.setAttribute('x1',55);line.setAttribute('x2',720);line.setAttribute('y1',y(tick));line.setAttribute('y2',y(tick));line.setAttribute('stroke','#d8e2df');svg.append(line);
-    const label=document.createElementNS(ns,'text');label.setAttribute('x',8);label.setAttribute('y',y(tick)+4);label.setAttribute('font-size','12');label.textContent=String(tick);svg.append(label);
+  const plotLeft=58,plotRight=720,plotTop=42,plotBottom=238,axisY=264;
+  const pointTime=row=>Date.parse(row.date+'T'+(row.time||'12:00')+':00Z');
+  let minTime=Math.min(...readings.map(pointTime)),maxTime=Math.max(...readings.map(pointTime));
+  if(minTime===maxTime){minTime-=43200000;maxTime+=43200000;}
+  const xTime=time=>plotLeft+(time-minTime)/(maxTime-minTime)*(plotRight-plotLeft);
+  const pressureValues=readings.flatMap(row=>[row.systolic,row.diastolic]);
+  const low=Math.min(60,Math.floor((Math.min(...pressureValues)-10)/20)*20);
+  const high=Math.max(180,Math.ceil((Math.max(...pressureValues)+10)/20)*20);
+  const y=value=>plotBottom-(value-low)/(high-low)*(plotBottom-plotTop);
+  for(let tick=low;tick<=high;tick+=20){
+    const line=document.createElementNS(ns,'line');line.setAttribute('x1',plotLeft);line.setAttribute('x2',plotRight);line.setAttribute('y1',y(tick));line.setAttribute('y2',y(tick));line.setAttribute('stroke','#d8e2df');svg.append(line);
+    const label=document.createElementNS(ns,'text');label.setAttribute('x',plotLeft-8);label.setAttribute('y',y(tick)+4);label.setAttribute('text-anchor','end');label.setAttribute('font-size','12');label.textContent=String(tick);svg.append(label);
   }
   const addSeries=(field,color,title)=>{
-    const points=readings.map((row,i)=>x(i)+','+y(row[field])).join(' ');
+    const points=readings.map(row=>xTime(pointTime(row))+','+y(row[field])).join(' ');
     const poly=document.createElementNS(ns,'polyline');poly.setAttribute('points',points);poly.setAttribute('fill','none');poly.setAttribute('stroke',color);poly.setAttribute('stroke-width','2.5');svg.append(poly);
-    readings.forEach((row,i)=>{const dot=document.createElementNS(ns,'circle');dot.setAttribute('cx',x(i));dot.setAttribute('cy',y(row[field]));dot.setAttribute('r','3.5');dot.setAttribute('fill',color);dot.setAttribute('aria-label',row.date+' '+title+' '+row[field]);svg.append(dot);});
+    readings.forEach(row=>{const dot=document.createElementNS(ns,'circle');dot.setAttribute('cx',xTime(pointTime(row)));dot.setAttribute('cy',y(row[field]));dot.setAttribute('r','3.5');dot.setAttribute('fill',color);dot.setAttribute('aria-label',row.date+(row.time?' '+row.time:'')+' '+title+' '+row[field]);svg.append(dot);});
   };
   addSeries('systolic','#b4422e','Systolic');addSeries('diastolic','#236a83','Diastolic');
-  for (const event of medicationEvents) {
-    const index=readings.findIndex(row=>row.date>=event.date);
-    if(index<0) continue;
-    const line=document.createElementNS(ns,'line');line.setAttribute('x1',x(index));line.setAttribute('x2',x(index));line.setAttribute('y1',15);line.setAttribute('y2',250);line.setAttribute('stroke','#7d5b9b');line.setAttribute('stroke-dasharray','5 4');svg.append(line);
+  const firstDate=readings[0].date,lastDate=readings[readings.length-1].date;
+  for(const event of medicationEvents){
+    if(event.date<firstDate||event.date>lastDate)continue;
+    const markerTime=Date.parse(event.date+'T12:00:00Z');
+    const markerX=Math.max(plotLeft,Math.min(plotRight,xTime(markerTime)));
+    const line=document.createElementNS(ns,'line');line.setAttribute('x1',markerX);line.setAttribute('x2',markerX);line.setAttribute('y1',plotTop);line.setAttribute('y2',plotBottom);line.setAttribute('stroke','#7d5b9b');line.setAttribute('stroke-dasharray','5 4');svg.append(line);
   }
-  const legend=document.createElementNS(ns,'text');legend.setAttribute('x',565);legend.setAttribute('y',20);legend.setAttribute('font-size','13');legend.textContent='● Systolic   ● Diastolic   ⋮ Medication';svg.append(legend);
+  const axis=document.createElementNS(ns,'line');axis.setAttribute('x1',plotLeft);axis.setAttribute('x2',plotRight);axis.setAttribute('y1',axisY);axis.setAttribute('y2',axisY);axis.setAttribute('stroke','#617777');svg.append(axis);
+  for(let index=0;index<=4;index++){
+    const time=minTime+(maxTime-minTime)*index/4;const tickX=xTime(time);
+    const mark=document.createElementNS(ns,'line');mark.setAttribute('x1',tickX);mark.setAttribute('x2',tickX);mark.setAttribute('y1',axisY);mark.setAttribute('y2',axisY+5);mark.setAttribute('stroke','#617777');svg.append(mark);
+    const date=new Date(time);const labelText=(maxTime-minTime)>3*365*86400000?String(date.getUTCFullYear()):date.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'2-digit',timeZone:'UTC'});
+    const label=document.createElementNS(ns,'text');label.setAttribute('x',tickX);label.setAttribute('y',axisY+20);label.setAttribute('text-anchor',index===0?'start':index===4?'end':'middle');label.setAttribute('font-size','11');label.setAttribute('fill','#4d6364');label.textContent=labelText;svg.append(label);
+  }
+  const legend=document.createElementNS(ns,'text');legend.setAttribute('x',plotRight);legend.setAttribute('y',22);legend.setAttribute('text-anchor','end');legend.setAttribute('font-size','12');legend.textContent='● Systolic   ● Diastolic   ⋮ Medication';svg.append(legend);
   const periods=[['Before Feb 25, 2026',r=>r.date<'2026-02-25'],['Feb 25–May 31, 2026',r=>r.date>='2026-02-25'&&r.date<'2026-06-01'],['Jun 1, 2026 onward',r=>r.date>='2026-06-01']];
   const summary=document.querySelector('#period-summary');summary.replaceChildren();
   for(const [name,include] of periods){const subset=readings.filter(include);const box=document.createElement('div');if(subset.length){const mean=key=>Math.round(subset.reduce((total,row)=>total+row[key],0)/subset.length);box.textContent=name+' · '+subset.length+' readings · average '+mean('systolic')+'/'+mean('diastolic')+' mm Hg';}else box.textContent=name+' · no readings';summary.append(box);}
 }
 drawReport();
+function svgObjectUrl(svg){const copy=svg.cloneNode(true);const box=copy.viewBox.baseVal;copy.setAttribute('width',String(box.width||760));copy.setAttribute('height',String(box.height||320));return URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'}));}
 function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight){
   let line='';
   for(const word of String(text).split(/\s+/)){const candidate=line?line+' '+word:word;if(ctx.measureText(candidate).width>maxWidth&&line){ctx.fillText(line,x,y);line=word;y+=lineHeight;}else line=candidate;}
@@ -839,9 +875,9 @@ async function createReportPdf(){
   for(const item of medText){ctx.fillStyle='#fff5f1';ctx.fillRect(72,y-32,1096,78);ctx.fillStyle='#17252b';y=wrapCanvasText(ctx,item,92,y,1045,31)+12;}
   const reportStatus=document.querySelector('#report-load-status')?.textContent?.trim();ctx.fillStyle='#526567';ctx.font='21px system-ui,sans-serif';y=wrapCanvasText(ctx,reportStatus||'',72,y+10,1096,29);
   ctx.fillStyle='#17252b';ctx.font='bold 25px system-ui,sans-serif';ctx.fillText('Blood pressure trend',72,y+36);
-  const svg=document.querySelector('#bp-chart');const markup=new XMLSerializer().serializeToString(svg);const url=URL.createObjectURL(new Blob([markup],{type:'image/svg+xml;charset=utf-8'}));
-  try{const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url;});ctx.drawImage(image,72,y+55,1096,432);}finally{URL.revokeObjectURL(url);}
-  y+=530;ctx.fillStyle='#526567';ctx.font='22px system-ui,sans-serif';
+  const svg=document.querySelector('#bp-chart');const url=svgObjectUrl(svg);
+  try{const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url;});ctx.drawImage(image,72,y+55,1096,1096*320/760);}finally{URL.revokeObjectURL(url);}
+  y+=560;ctx.fillStyle='#526567';ctx.font='22px system-ui,sans-serif';
   for(const item of [...document.querySelectorAll('#period-summary>*')]){y=wrapCanvasText(ctx,item.textContent,72,y,1096,31)+14;}
   ctx.font='18px system-ui,sans-serif';ctx.fillStyle='#667';ctx.fillText('Prepared '+new Date().toLocaleDateString(),72,1688);
   const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.94));if(!jpeg)throw new Error('PDF image creation failed');
@@ -867,11 +903,11 @@ document.querySelector('#save-chart-image').addEventListener('click',async()=>{
   const status=document.querySelector('#export-status');const svg=document.querySelector('#bp-chart');
   if(!svg.querySelector('polyline')){status.textContent='Load blood pressure readings before saving the chart image.';return;}
   try{
-    const markup=new XMLSerializer().serializeToString(svg);const url=URL.createObjectURL(new Blob([markup],{type:'image/svg+xml;charset=utf-8'}));
+    const url=svgObjectUrl(svg);
     const image=new Image();
     image.onload=async()=>{
       try{
-        const canvas=document.createElement('canvas');canvas.width=1520;canvas.height=720;const context=canvas.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);
+        const box=svg.viewBox.baseVal;const canvas=document.createElement('canvas');canvas.width=1520;canvas.height=Math.round(canvas.width*(box.height||320)/(box.width||760));const context=canvas.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);
         const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!png)throw new Error('Image export failed');
         const file=new File([png],'blood-pressure-trend.png',{type:'image/png'});
         if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:'Blood pressure trend'});status.textContent='Choose Save Image in the share sheet to add the graph to Photos.';}
