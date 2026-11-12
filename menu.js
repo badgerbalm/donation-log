@@ -45,7 +45,7 @@
     if(event.shiftKey&&(document.activeElement===first||!menu.contains(document.activeElement))){event.preventDefault();last.focus();}
     else if(!event.shiftKey&&(document.activeElement===last||!menu.contains(document.activeElement))){event.preventDefault();first.focus();}
   });
-  document.addEventListener('click',event=>{
-    if(event.target.closest('.menu-link')&&!menu.hidden)closeMenu(false);
+  document.addEventListener('donation-log:close-menu',event=>{
+    closeMenu(event.detail?.returnFocus!==false);
   });
 })();
