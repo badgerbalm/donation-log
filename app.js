@@ -2,7 +2,9 @@
 
 const storageKey = 'csl-donation-visits-v1';
 const apiBase = 'https://donation-log-api.onlinesny.workers.dev/api';
-const workoutSessionKey = 'daily-workout-google-session-v1';
+const donationSessionKey = 'donation-log-google-session-v1';
+const pendingAuthKey = 'donation-log-google-pending-v1';
+const authBase = 'https://daily-workout-auth.onlinesny.workers.dev';
 const fields = ['systolic', 'diastolic', 'pulse', 'weight', 'temperature', 'hematocrit', 'protein', 'duration'];
 const columns = ['date', 'time', 'visitType', ...fields, 'arm', 'notes', 'source'];
 const form = document.querySelector('#visit');
@@ -21,14 +23,95 @@ let visitsLoadError = '';
 
 function savedSession() {
   try {
-    const value = JSON.parse(localStorage.getItem(workoutSessionKey) || 'null');
+    const value = JSON.parse(localStorage.getItem(donationSessionKey) || 'null');
     return value?.expires * 1000 > Date.now() && typeof value.session === 'string' ? value : null;
   } catch { return null; }
 }
 
+function randomAuthValue() {
+  return btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function setConnectionStatus(message) {
+  document.querySelectorAll('.connection-status').forEach(node => { node.textContent = message; });
+}
+
+async function startDonationSignIn() {
+  const buttons = [...document.querySelectorAll('.connect-google')];
+  buttons.forEach(button => { button.disabled = true; });
+  setConnectionStatus('Opening secure Google sign-in…');
+  try {
+    const verifier = randomAuthValue();
+    const state = randomAuthValue();
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+    const challenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    sessionStorage.setItem(pendingAuthKey, JSON.stringify({ verifier, state, created: Date.now() }));
+    const response = await fetch(authBase + '/auth/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challenge, state, app: 'donation' }),
+      cache: 'no-store',
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer'
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok || typeof detail.url !== 'string') throw new Error(detail.error || 'Could not start Google sign-in.');
+    location.assign(detail.url);
+  } catch (error) {
+    setConnectionStatus(error.message || 'Could not start Google sign-in. Try again.');
+    buttons.forEach(button => { button.disabled = false; });
+  }
+}
+
+async function restoreDonationSignIn() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  if (params.has('donation_auth') || params.has('donation_auth_error')) {
+    let pending;
+    try { pending = JSON.parse(sessionStorage.getItem(pendingAuthKey) || 'null'); } catch {}
+    history.replaceState(null, '', location.pathname + location.search);
+    if (!pending || pending.state !== params.get('donation_state') || Date.now() - pending.created > 900000) {
+      sessionStorage.removeItem(pendingAuthKey);
+      throw new Error('Google returned to a different browser context. Tap Sign in to Donation Log and try again.');
+    }
+    if (params.has('donation_auth_error')) {
+      sessionStorage.removeItem(pendingAuthKey);
+      throw new Error('Google sign-in was cancelled.');
+    }
+    const response = await fetch(authBase + '/auth/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket: params.get('donation_auth'), verifier: pending.verifier }),
+      cache: 'no-store',
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer'
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok || typeof detail.session !== 'string') throw new Error(detail.error || 'Google sign-in could not be completed.');
+    localStorage.setItem(donationSessionKey, JSON.stringify(detail));
+    sessionStorage.removeItem(pendingAuthKey);
+  }
+
+  const session = savedSession();
+  if (!session) return false;
+  const response = await fetch(authBase + '/session', {
+    headers: { Authorization: 'Bearer ' + session.session },
+    cache: 'no-store',
+    credentials: 'omit',
+    referrerPolicy: 'no-referrer'
+  });
+  if (response.status === 401) {
+    localStorage.removeItem(donationSessionKey);
+    return false;
+  }
+  if (!response.ok) throw new Error('Could not verify your Donation Log sign-in.');
+  return true;
+}
+
 async function apiRequest(path, options = {}) {
   const session = savedSession();
-  if (!session) throw new Error('Connect Google in Daily Workout, then return here and refresh.');
+  if (!session) throw new Error('Sign in to Donation Log to load your private visits.');
   const response = await fetch(apiBase + path, {
     ...options,
     cache: 'no-store',
@@ -36,7 +119,7 @@ async function apiRequest(path, options = {}) {
   });
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}));
-    throw new Error(detail.error || (response.status === 401 ? 'Your Google connection needs renewal. Reconnect in Daily Workout.' : 'The shared database is unavailable.'));
+    throw new Error(detail.error || (response.status === 401 ? 'Your Donation Log sign-in expired. Sign in again here.' : 'The Donation Log database is unavailable.'));
   }
   return response;
 }
@@ -512,13 +595,29 @@ async function refreshVisits(showHistoryStatus=true) {
 }
 resetForm();
 render();
-historyStatus.textContent='Loading your shared visits…';
-refreshVisits(false);
-apiRequest('/medications').then(async response=>{
-  const data=await response.json();
-  medicationEvents=Array.isArray(data.events)?data.events:[];
-  drawReport();
-}).catch(()=>{medicationEvents=[];drawReport();});
+document.querySelectorAll('.connect-google').forEach(button => button.addEventListener('click', startDonationSignIn));
+(async function initializeDonationLog() {
+  try {
+    await restoreDonationSignIn();
+  } catch (error) {
+    setConnectionStatus(error.message);
+  }
+  if (!savedSession()) {
+    visitsLoadState='error';
+    visitsLoadError='Sign in to Donation Log to load your private visits.';
+    historyStatus.textContent=visitsLoadError;
+    document.querySelector('#connection-help').hidden=false;
+    drawReport();
+    return;
+  }
+  historyStatus.textContent='Loading your private visits…';
+  await refreshVisits(false);
+  apiRequest('/medications').then(async response=>{
+    const data=await response.json();
+    medicationEvents=Array.isArray(data.events)?data.events:[];
+    drawReport();
+  }).catch(()=>{medicationEvents=[];drawReport();});
+})();
 document.querySelector('#visit-refresh').addEventListener('click',()=>refreshVisits(true));
 document.querySelector('#refresh-report').addEventListener('click',()=>refreshVisits(false));
 function drawReport() {
