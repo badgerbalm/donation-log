@@ -8,13 +8,14 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180-v2.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
-<link rel="stylesheet" href="style.css?v=donation-qr-crop-20261112-9">
+<link rel="stylesheet" href="style.css?v=csl-flow-20261112-10">
 <script src="menu.js?v=direct-menu-v2-20261112" defer></script>
 <script src="navigation.js?v=direct-menu-v2-20261112" defer></script>
-<script src="app.js?v=donation-qr-crop-20261112-9" defer></script>
+<script src="jsQR.js?v=1.4.0" defer></script>
+<script src="app.js?v=csl-flow-20261112-10" defer></script>
 </head>
 <body>
-<header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1>Donation Log</h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
+<header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1><svg class="header-blood-drop" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 4C25 15 12 28 12 40a20 20 0 0 0 40 0C52 28 39 15 32 4Z" fill="#ff3349" stroke="#fff" stroke-width="4"/><path d="M24 39c0 5 3 9 8 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg><span>Donation Log</span></h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
 <div id="menu-backdrop" class="menu-backdrop" aria-hidden="true" hidden></div>
 <aside id="app-menu" class="app-menu" role="dialog" aria-modal="true" aria-labelledby="menu-title" aria-hidden="true" inert hidden>
 <div class="menu-top"><h2 id="menu-title">Donation Log menu</h2><button type="button" id="menu-close" class="secondary" autofocus>Close</button></div>
@@ -104,24 +105,28 @@
 <div id="visit-context" class="visit-context" hidden></div>
 <section id="csl-intake-stage" class="intake-flow-step" hidden>
 <h3>Start CSL intake</h3>
-<p>Complete the CSL questions, then return here to capture your check-in QR code.</p>
+<p>Complete the CSL questions in the new tab. When you return, choose your QR screenshot or paste it from the clipboard.</p>
 <a id="open-csl-intake" class="intake-open-button" href="https://donor360.cslplasma.com/profile" target="_blank" rel="noopener noreferrer">Open CSL Intake Form <span aria-hidden="true">↗</span></a>
-<button type="button" id="capture-csl-qr" class="secondary">Capture your QR screenshot</button>
+
 <p class="scan-privacy muted">Your QR screenshot stays in this browser and is cleared after check-in or if this page is refreshed. It is not uploaded or saved with your visit.</p>
 </section>
 <section id="qr-capture-stage" class="intake-flow-step" hidden>
 <h3>Capture your QR</h3>
-<p>Choose a screenshot of the QR code from the CSL intake page.</p>
-<label class="scan-upload"><span class="scan-upload-button">▧ Choose QR Screenshot</span><span id="qr-file-name" class="scan-file-name">No QR screenshot selected yet</span><input type="file" id="qr-image" accept="image/*"></label>
-<div class="actions qr-capture-actions"><button type="button" id="paste-qr-image" class="secondary">Paste from clipboard</button></div>
-<img id="qr-preview" class="qr-preview" alt="Selected CSL check-in QR screenshot preview" hidden>
-<div class="actions qr-crop-actions"><button type="button" id="crop-qr" class="secondary" disabled>Crop QR for large display</button></div>
+<p>Choose the QR screenshot you saved from CSL, or paste an image copied to your clipboard.</p>
+<div class="qr-source-actions">
+<button type="button" id="choose-qr-image" class="scan-upload-button">▧ Choose QR Screenshot</button>
+<button type="button" id="paste-qr-image" class="secondary">▣ From Clipboard</button>
+<input type="file" id="qr-image" accept="image/*" hidden>
+</div>
+<p id="qr-file-name" class="scan-file-name">No QR screenshot selected yet</p>
+<img id="qr-preview" class="qr-preview" alt="QR code cropped from the selected CSL screenshot" hidden>
+<div id="qr-crop-actions" class="actions qr-crop-actions" hidden><button type="button" id="crop-qr" class="secondary">Adjust QR crop</button></div>
 <section id="qr-crop-editor" class="qr-crop-editor" hidden>
-<p>Drag a square around the QR code. The selected area will fill the front desk screen.</p>
+<p>Automatic QR detection did not find the code. Drag a square around it, keeping all four corner squares inside the selection.</p>
 <div id="qr-crop-frame" class="qr-crop-frame"><img id="qr-crop-source" alt="Original CSL screenshot for QR cropping"><div id="qr-crop-selection" class="qr-crop-selection" hidden></div></div>
 <div class="actions qr-crop-editor-actions"><button type="button" id="apply-qr-crop" disabled>Use cropped QR</button><button type="button" id="use-full-qr" class="secondary">Use full screenshot</button></div>
 </section>
-<div class="actions"><button type="button" id="use-qr" disabled>Use this QR</button></div>
+<div class="actions"><button type="button" id="use-qr" disabled>Use this QR code</button></div>
 <p id="qr-status" class="muted" role="status" aria-live="polite"></p>
 </section>
 <fieldset id="csl-fields" class="form-step">
@@ -162,6 +167,7 @@
 <label id="visit-notes-wrap" class="visit-notes-wrap" hidden>Visit Notes<textarea name="notes" rows="3" maxlength="2000" placeholder="Add notes about this visit"></textarea></label>
 <div class="actions entry-actions"><button type="button" id="phase-back" class="secondary" hidden>Back</button><button type="submit" id="phase-save">Save Visit Details</button><button type="button" id="cancel" class="secondary" hidden>Finish Later</button></div>
 </form>
+<article id="prior-visit-card" class="prior-visit-card" hidden><p class="eyebrow">PRIOR VISIT</p><h3 id="prior-visit-date"></h3><p id="prior-visit-details"></p></article>
 <p id="status" role="status" aria-live="polite"></p>
 <div id="connection-help" class="scan-box" hidden><h3>Connect your private data</h3><p>Sign in with your Google account here. Google will return you to Donation Log after confirming your identity. Safari and the Home Screen app may each need their own sign-in.</p><button type="button" class="connect-google">Sign in to Donation Log</button><p class="muted connection-status" role="status" aria-live="polite"></p></div>
 </div>

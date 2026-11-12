@@ -339,7 +339,7 @@ function renderWorkflow() {
       heading.textContent = 'Show QR at the desk';
       description.textContent = 'Keep this QR visible while CSL scans it at the front desk.';
     } else if (phase === 'details') {
-      heading.textContent = row ? 'Before Visit' : 'Before Donation';
+      heading.textContent = 'Before Donation';
       description.textContent = 'Enter your arm and CSL screening values before donation.';
     } else if (phase === 'duration') {
       heading.textContent = 'Donation Duration';
@@ -349,6 +349,10 @@ function renderWorkflow() {
       description.textContent = 'Choose the CSL Donation Details screenshot. Review all values before saving.';
     }
   }
+  const priorCard = document.querySelector('#prior-visit-card');
+  const showPrior = isCsl && ['details','duration'].includes(phase);
+  priorCard.hidden = !showPrior;
+  if (showPrior) renderPriorVisitSummary();
   const deskQr = document.querySelector('#qr-display');
   if (qrPreviewUrl) { deskQr.src = qrPreviewUrl; deskQr.hidden = false; }
   else { deskQr.removeAttribute('src'); deskQr.hidden = true; }
@@ -387,6 +391,14 @@ function renderLastVisitSummary() {
     row.protein !== null ? 'Protein ' + row.protein.toFixed(1) + ' g/dL' : '',
     row.duration !== null ? 'Duration ' + row.duration + ' min' : ''
   ].filter(Boolean).join('  ·  ') || 'Visit details not entered yet';
+}
+function renderPriorVisitSummary() {
+  const prior = [...records].filter(item => item.visitType === 'CSL donation' && String(item.id || '') !== String(activeVisitId || '') && visitKey(item) !== editing).sort((x,y) => dateTimeKey(y).localeCompare(dateTimeKey(x)))[0];
+  const date = document.querySelector('#prior-visit-date');
+  const details = document.querySelector('#prior-visit-details');
+  if (!prior) { date.textContent = 'No previous CSL visit'; details.textContent = 'Your last donation summary will appear here.'; return; }
+  date.textContent = new Date(prior.date + 'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+  details.textContent = [prior.arm ? 'Arm: ' + prior.arm : '', prior.hematocrit !== null ? 'Hematocrit: ' + prior.hematocrit + '%' : '', prior.protein !== null ? 'Protein: ' + prior.protein.toFixed(1) + ' g/dL' : '', prior.duration !== null ? 'Duration: ' + prior.duration + ' min' : ''].filter(Boolean).join(' · ');
 }
 function resetForm() {
   clearScanSelection();
@@ -836,8 +848,7 @@ form.elements.visitType.addEventListener('change', () => {
     form.elements.arm.value = defaultArm();
     for (const name of ['time','systolic','diastolic','pulse','weight','temperature','duration','notes']) form.elements[name].value = '';
     entryPhase = 'intake';
-    status.textContent = 'CSL selected. Complete the CSL intake and capture its QR screenshot to continue.';
-    openCslIntakePage();
+    status.textContent = 'CSL selected. Open the CSL intake form when you are ready.';
   } else {
     for (const name of ['time','systolic','diastolic','pulse','weight','temperature','hematocrit','protein','duration','arm']) form.elements[name].value = '';
     entryPhase = 'other';
@@ -851,7 +862,6 @@ document.querySelector('#add-new-visit').addEventListener('click', () => {
   activeVisitId = makeVisitId();
   form.elements.id.value = activeVisitId;
   cancel.hidden = false;
-  openCslIntakePage();
   renderEntryDashboard();
   form.elements.date.focus();
 });
@@ -1149,7 +1159,9 @@ const qrImage=document.querySelector('#qr-image');
 const qrPreview=document.querySelector('#qr-preview');
 const qrDisplay=document.querySelector('#qr-display');
 const qrUseButton=document.querySelector('#use-qr');
+const qrChooseButton=document.querySelector('#choose-qr-image');
 const qrPasteButton=document.querySelector('#paste-qr-image');
+const qrCropActions=document.querySelector('#qr-crop-actions');
 const qrStatus=document.querySelector('#qr-status');
 const qrCropButton=document.querySelector('#crop-qr');
 const qrCropEditor=document.querySelector('#qr-crop-editor');
@@ -1181,6 +1193,7 @@ function clearQrSelection(){
   qrDisplay.hidden=true;
   qrCropSource.removeAttribute('src');
   qrCropEditor.hidden=true;
+  qrCropActions.hidden=true;
   qrCropSelection.hidden=true;
   qrApplyCropButton.disabled=true;
   qrCropButton.disabled=true;
@@ -1189,7 +1202,7 @@ function clearQrSelection(){
   document.querySelector('#qr-file-name').textContent='No QR screenshot selected yet';
   qrStatus.textContent='';
 }
-function selectQrImage(file){
+async function selectQrImage(file){
   if(!file)return false;
   if(!file.type.startsWith('image/')){clearQrSelection();qrStatus.textContent='Choose an image screenshot of the CSL QR code.';return false;}
   if(file.size>20*1024*1024){clearQrSelection();qrStatus.textContent='This image is over 20 MB. Choose a smaller screenshot.';return false;}
@@ -1197,21 +1210,81 @@ function selectQrImage(file){
   qrSourceUrl=URL.createObjectURL(file);
   qrCropSource.src=qrSourceUrl;
   replaceQrPreviewUrl(URL.createObjectURL(file));
-  document.querySelector('#qr-file-name').textContent=file.name||'Pasted image from clipboard';
-  qrCropButton.disabled=false;
+  document.querySelector('#qr-file-name').textContent=file.name||'Image from clipboard';
   qrUseButton.disabled=true;
-  qrStatus.textContent='To make the desk code large, crop around the QR code. The screenshot stays on this device.';
+  qrChooseButton.disabled=true;
+  qrPasteButton.disabled=true;
+  qrStatus.textContent='Finding and cropping the QR code on this device…';
+  try{
+    await qrCropSource.decode();
+    const cropped=await detectAndCropQr(qrCropSource);
+    if(!cropped)throw new Error('QR code not detected');
+    replaceQrPreviewUrl(URL.createObjectURL(cropped));
+    qrCropEditor.hidden=true;
+    qrCropActions.hidden=true;
+    qrUseButton.disabled=false;
+    qrStatus.textContent='QR code detected and cropped for the front desk. The image stays on this device.';
+  }catch(error){
+    qrCropActions.hidden=false;
+    qrCropButton.disabled=false;
+    qrCropEditor.hidden=true;
+    qrUseButton.disabled=true;
+    qrStatus.textContent='Could not detect the QR automatically. Tap “Adjust QR crop” to select it manually.';
+  }finally{
+    qrChooseButton.disabled=false;
+    qrPasteButton.disabled=false;
+  }
   return true;
+}
+async function detectAndCropQr(image){
+  if(typeof window.jsQR!=='function')throw new Error('QR detector unavailable');
+  const sourceWidth=image.naturalWidth,sourceHeight=image.naturalHeight;
+  const scanScale=Math.min(1,1800/Math.max(sourceWidth,sourceHeight));
+  const scanWidth=Math.max(1,Math.round(sourceWidth*scanScale));
+  const scanHeight=Math.max(1,Math.round(sourceHeight*scanScale));
+  const scanCanvas=document.createElement('canvas');
+  scanCanvas.width=scanWidth;scanCanvas.height=scanHeight;
+  const scanContext=scanCanvas.getContext('2d',{willReadFrequently:true});
+  if(!scanContext)throw new Error('Image processing is unavailable');
+  scanContext.drawImage(image,0,0,scanWidth,scanHeight);
+  const pixels=scanContext.getImageData(0,0,scanWidth,scanHeight);
+  const code=window.jsQR(pixels.data,scanWidth,scanHeight,{inversionAttempts:'attemptBoth'});
+  if(!code?.location)throw new Error('QR code not detected');
+  const points=['topLeftCorner','topRightCorner','bottomLeftCorner','bottomRightCorner'].map(key=>code.location[key]).filter(Boolean);
+  if(points.length<4)throw new Error('QR boundary unavailable');
+  const bounds={
+    left:Math.min(...points.map(point=>point.x))/scanScale,
+    right:Math.max(...points.map(point=>point.x))/scanScale,
+    top:Math.min(...points.map(point=>point.y))/scanScale,
+    bottom:Math.max(...points.map(point=>point.y))/scanScale
+  };
+  const width=bounds.right-bounds.left,height=bounds.bottom-bounds.top;
+  let side=Math.min(Math.max(width,height)*1.22,sourceWidth,sourceHeight);
+  if(side<48)throw new Error('QR code is too small to crop');
+  const centerX=(bounds.left+bounds.right)/2,centerY=(bounds.top+bounds.bottom)/2;
+  const sourceX=Math.max(0,Math.min(sourceWidth-side,centerX-side/2));
+  const sourceY=Math.max(0,Math.min(sourceHeight-side,centerY-side/2));
+  const outputSide=Math.max(512,Math.min(1200,Math.round(side)));
+  const output=document.createElement('canvas');
+  output.width=outputSide;output.height=outputSide;
+  const context=output.getContext('2d');
+  if(!context)throw new Error('Image processing is unavailable');
+  context.imageSmoothingEnabled=true;
+  context.imageSmoothingQuality='high';
+  context.drawImage(image,sourceX,sourceY,side,side,0,0,outputSide,outputSide);
+  return await new Promise((resolve,reject)=>output.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not create cropped image')),'image/png'));
 }
 function openCslIntakePage(){
   window.open('https://donor360.cslplasma.com/profile','_blank','noopener,noreferrer');
 }
-document.querySelector('#capture-csl-qr').addEventListener('click',()=>{
+document.querySelector('#open-csl-intake').addEventListener('click',()=>{
   entryPhase='qrCapture';
+  clearQrSelection();
   renderWorkflow();
-  qrImage.click();
+  qrStatus.textContent='Complete the CSL intake in the other tab. When you return, choose the saved QR screenshot or paste it from the clipboard.';
 });
-qrImage.addEventListener('change',()=>selectQrImage(qrImage.files?.[0]));
+document.querySelector('#choose-qr-image').addEventListener('click',()=>qrImage.click());
+qrImage.addEventListener('change',()=>{void selectQrImage(qrImage.files?.[0]);});
 qrPasteButton.addEventListener('click',async()=>{
   qrPasteButton.disabled=true;
   qrStatus.textContent='Checking clipboard for an image…';
@@ -1224,13 +1297,13 @@ qrPasteButton.addEventListener('click',async()=>{
       const blob=await item.getType(imageType);
       const extension=imageType.split('/')[1]?.replace('jpeg','jpg')||'png';
       const file=new File([blob],'csl-check-in-qr.'+extension,{type:imageType});
-      if(selectQrImage(file))return;
+      if(await selectQrImage(file))return;
     }
     qrStatus.textContent='No image was found on the clipboard. Copy a screenshot of your CSL QR code, then try again.';
   }catch(error){
     qrStatus.textContent=error?.name==='NotAllowedError'
-      ? 'Clipboard access was denied. Allow paste when your browser asks, then try again. You can also choose the image from Photo library or Files.'
-      : (error?.message||'Could not read an image from the clipboard. Use Photo library or Choose file instead.');
+      ? 'Clipboard access was denied. Allow paste when your browser asks, then try again. You can also choose the image from Photo Library or Files.'
+      : (error?.message||'Could not read an image from the clipboard. Choose the screenshot instead.');
   }finally{
     qrPasteButton.disabled=false;
   }

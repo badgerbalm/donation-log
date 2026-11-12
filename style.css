@@ -226,3 +226,18 @@ body:not(.menu-open) main button.secondary{background:#e5f6f2;color:#07584f;bord
 .home-qr-card h2{margin:0;color:#064d49}
 .home-qr-card>p:not(.eyebrow){font-size:1.05rem}
 .home-qr-card>button{width:100%;min-height:54px;margin-top:16px;border-radius:14px;background:linear-gradient(100deg,#078875,#006658);color:#fff;border:1px solid #007366;font-weight:850}
+
+/* Match the approved mobile workflow mockup */
+header h1{display:flex;align-items:center;gap:10px}
+.header-blood-drop{flex:0 0 auto;width:clamp(34px,8vw,46px);height:clamp(34px,8vw,46px);filter:drop-shadow(0 2px 4px #002d2a55)}
+.qr-source-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0 8px}
+.qr-source-actions button{width:100%;min-height:54px;border-radius:12px;font-weight:800;white-space:normal}
+.qr-source-actions .secondary{background:#e5f6f2;color:#07584f;border:1px solid #86c6b9}
+#qr-image[hidden]{display:none!important}
+.qr-source-actions+.scan-file-name{text-align:center;margin:8px 0 0}
+.qr-preview{width:min(100%,460px);height:min(52vh,480px);max-height:480px;object-fit:contain;padding:12px}
+.qr-display{width:min(100%,520px);height:min(58vh,560px);max-height:560px;object-fit:contain}
+.prior-visit-card{margin:16px 0 0;padding:14px 16px;border:1px solid #c6e9e2;border-radius:16px;background:linear-gradient(145deg,#f5fffc,#eaf9f6);box-shadow:0 4px 12px #126d5b10}
+.prior-visit-card h3{margin:3px 0;color:#063f3b;font-size:1.08rem}
+.prior-visit-card p:last-child{margin:4px 0 0;color:#315d58}
+@media(max-width:420px){.qr-source-actions{grid-template-columns:1fr}}
