@@ -20,6 +20,7 @@ let canWrite = true;
 let medicationEvents = [];
 let visitsLoadState = 'loading';
 let visitsLoadError = '';
+let activeTrend = 'bp';
 
 function savedSession() {
   try {
@@ -313,6 +314,7 @@ function render() {
   history.replaceChildren();
   renderHistoryTable();
   renderHistoryChart();
+  drawMetricTrend();
   renderEntryDashboard();
   if (!records.length) {
     if (canWrite) historyStatus.textContent = 'No visits saved yet.';
@@ -424,6 +426,143 @@ function renderHistoryChart(){
     const label=document.createElementNS(ns,'text');label.setAttribute('x',String(x));label.setAttribute('y','645');label.setAttribute('text-anchor','middle');label.setAttribute('font-size','11');label.setAttribute('fill','#4d6364');label.textContent=String(year);svg.append(label);
   });
   const legend=document.createElementNS(ns,'text');legend.setAttribute('x','748');legend.setAttribute('y','20');legend.setAttribute('text-anchor','end');legend.setAttribute('font-size','11');legend.setAttribute('fill','#4d6364');legend.textContent=allValues.length+' measurements';svg.append(legend);
+}
+
+
+const trendSpecs = {
+  bp: { title: 'Blood pressure trend', unit: 'mm Hg', fields: [['systolic','Systolic','#b4422e'],['diastolic','Diastolic','#236a83']], fixed: [40,200,20] },
+  weight: { title: 'Weight trend', unit: 'lb', fields: [['weight','Weight','#518250']], step: 2, minSpan: 10, decimals: 1 },
+  hematocrit: { title: 'Hematocrit trend', unit: '%', fields: [['hematocrit','Hematocrit','#916c25']], step: 2, minSpan: 8, decimals: 0 },
+  protein: { title: 'Total protein trend', unit: 'g/dL', fields: [['protein','Total protein','#7654a5']], step: 0.2, minSpan: 1, decimals: 1 },
+  temperature: { title: 'Temperature trend', unit: '°F', fields: [['temperature','Temperature','#c4663a']], step: 0.5, minSpan: 2, decimals: 1 }
+};
+
+function trendNumber(value, decimals) {
+  return Number(value).toFixed(decimals);
+}
+
+function trendDateLabel(date, includeYear = true) {
+  return new Date(date + 'T12:00:00').toLocaleDateString(undefined, {
+    month: 'short', day: 'numeric', ...(includeYear ? {year:'numeric'} : {})
+  });
+}
+
+function drawMetricTrend() {
+  const spec = trendSpecs[activeTrend] || trendSpecs.bp;
+  const title = document.querySelector('#trend-title');
+  const description = document.querySelector('#trend-description');
+  const summary = document.querySelector('#trend-summary');
+  const empty = document.querySelector('#trend-empty');
+  const wrap = document.querySelector('#trend-chart-wrap');
+  const svg = document.querySelector('#metric-trend-chart');
+  if (!title || !svg) return;
+  title.textContent = spec.title;
+  description.textContent = activeTrend === 'bp'
+    ? 'Recorded blood pressure over time. Donation screening readings may not be resting or home readings.'
+    : 'Recorded ' + spec.title.replace(/ trend$/, '').toLowerCase() + ' measurements over time.';
+
+  const period = document.querySelector('#trend-range')?.value || 'all';
+  let cutoff = '';
+  if (period !== 'all') {
+    const years = period === '1y' ? 1 : 5;
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - years);
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    cutoff = date.toISOString().slice(0, 10);
+  }
+  const fieldNames = spec.fields.map(field => field[0]);
+  let readings = records.filter(row => validDate(row.date) && (!cutoff || row.date >= cutoff));
+  if (activeTrend === 'bp') readings = readings.filter(row => Number.isFinite(row.systolic) && Number.isFinite(row.diastolic));
+  else readings = readings.filter(row => Number.isFinite(row[fieldNames[0]]));
+  readings.sort((a,b) => (a.date + ' ' + (a.time || '')).localeCompare(b.date + ' ' + (b.time || '')));
+
+  svg.replaceChildren();
+  svg.setAttribute('viewBox','0 0 820 370');
+  svg.setAttribute('aria-label',spec.title + ' in ' + spec.unit);
+  if (!readings.length) {
+    summary.textContent = 'No ' + spec.title.replace(/ trend$/, '').toLowerCase() + ' readings in this period.';
+    empty.textContent = activeTrend === 'protein'
+      ? 'No total protein readings recorded yet. Add a value during a CSL visit to start this trend.'
+      : 'Add a visit with this measurement to see its trend.';
+    empty.hidden = false;
+    wrap.hidden = true;
+    return;
+  }
+  empty.hidden = true;
+  wrap.hidden = false;
+
+  const dateRange = readings.map(row => Date.parse(row.date + 'T' + (row.time || '12:00') + ':00'));
+  const first = Math.min(...dateRange), last = Math.max(...dateRange);
+  const x = value => 72 + (last === first ? 0.5 : (value - first) / (last - first)) * 710;
+  const values = readings.flatMap(row => fieldNames.map(field => row[field]).filter(Number.isFinite));
+  let low, high, step;
+  if (spec.fixed) [low, high, step] = spec.fixed;
+  else {
+    step = spec.step;
+    const rawLow = Math.min(...values), rawHigh = Math.max(...values);
+    const span = Math.max(rawHigh - rawLow, spec.minSpan);
+    const pad = Math.max(span * 0.12, step * 1.5);
+    low = Math.floor((rawLow - pad) / step) * step;
+    high = Math.ceil((rawHigh + pad) / step) * step;
+    if (high <= low) high = low + step;
+  }
+  const top = 34, bottom = 292;
+  const y = value => bottom - ((value - low) / (high - low)) * (bottom - top);
+  const ns = 'http://www.w3.org/2000/svg';
+  const add = (tag, attrs, text) => {
+    const node = document.createElementNS(ns, tag);
+    for (const [key,value] of Object.entries(attrs || {})) node.setAttribute(key, String(value));
+    if (text !== undefined) node.textContent = text;
+    svg.append(node);
+    return node;
+  };
+  const tickCount = 5;
+  for (let i=0;i<=tickCount;i++) {
+    const value = low + (high-low)*i/tickCount, yy = y(value);
+    add('line',{x1:66,x2:800,y1:yy,y2:yy,stroke:'#d8e2df'});
+    add('text',{x:58,y:yy+4,'text-anchor':'end','font-size':12,fill:'#4d6364'},trendNumber(value,spec.decimals ?? 0));
+  }
+  add('line',{x1:70,x2:800,y1:bottom,y2:bottom,stroke:'#617777'});
+  const labelCount = Math.min(5, readings.length);
+  for(let i=0;i<labelCount;i++){
+    const index = labelCount===1 ? readings.length-1 : Math.round(i*(readings.length-1)/(labelCount-1));
+    const row = readings[index], xx = x(dateRange[index]);
+    add('line',{x1:xx,x2:xx,y1:bottom,y2:bottom+5,stroke:'#617777'});
+    add('text',{x:xx,y:bottom+25,'text-anchor':'middle','font-size':11,fill:'#4d6364'},trendDateLabel(row.date,false));
+  }
+  for(const [field,name,color] of spec.fields){
+    const series = readings.filter(row=>Number.isFinite(row[field]));
+    if(!series.length)continue;
+    const points = series.map(row=>x(Date.parse(row.date+'T'+(row.time||'12:00')+':00'))+','+y(row[field])).join(' ');
+    add('polyline',{points,fill:'none',stroke:color,'stroke-width':2.8,'stroke-linejoin':'round','stroke-linecap':'round'});
+    for(const row of series){
+      const circle=add('circle',{cx:x(Date.parse(row.date+'T'+(row.time||'12:00')+':00')),cy:y(row[field]),r:4,fill:color});
+      const pointTitle=document.createElementNS(ns,'title');
+      pointTitle.textContent=trendDateLabel(row.date)+': '+name+' '+trendNumber(row[field],spec.decimals ?? 0)+' '+spec.unit;
+      circle.append(pointTitle);
+    }
+  }
+  if(spec.fields.length>1){
+    let legendX=70;
+    for(const [field,name,color] of spec.fields){
+      const count=readings.filter(row=>Number.isFinite(row[field])).length;
+      add('circle',{cx:legendX+4,cy:345,r:4,fill:color});
+      add('text',{x:legendX+13,y:349,'font-size':12,fill:'#34494b'},name+' · '+count);
+      legendX+=125;
+    }
+  }
+  if(activeTrend==='bp'){
+    const latest=readings.at(-1);
+    const systolic=readings.map(row=>row.systolic),diastolic=readings.map(row=>row.diastolic);
+    summary.textContent='Latest '+latest.systolic+'/'+latest.diastolic+' mm Hg on '+trendDateLabel(latest.date)+
+      ' · '+readings.length+' readings · systolic '+Math.min(...systolic)+'–'+Math.max(...systolic)+
+      ' · diastolic '+Math.min(...diastolic)+'–'+Math.max(...diastolic);
+  } else {
+    const field=fieldNames[0],latest=readings.at(-1),measurements=readings.map(row=>row[field]);
+    summary.textContent='Latest '+trendNumber(latest[field],spec.decimals)+' '+spec.unit+' on '+trendDateLabel(latest.date)+
+      ' · '+readings.length+' readings · range '+trendNumber(Math.min(...measurements),spec.decimals)+'–'+
+      trendNumber(Math.max(...measurements),spec.decimals)+' '+spec.unit;
+  }
 }
 
 form.addEventListener('submit', async event => {
@@ -688,6 +827,15 @@ menuButton.addEventListener('click',()=>{menu.classList.add('open');menu.setAttr
 document.querySelector('#menu-close').addEventListener('click',()=>{closeMenu();menuButton.focus();});
 backdrop.addEventListener('click',closeMenu);
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenu();});
+document.querySelectorAll('.menu-link[data-trend]').forEach(link=>link.addEventListener('click',()=>{
+  activeTrend=link.dataset.trend;
+  document.querySelectorAll('[data-page-panel]').forEach(panel=>panel.hidden=panel.dataset.pagePanel!=='trend');
+  document.querySelectorAll('.menu-link').forEach(item=>item.classList.toggle('active',item===link));
+  document.querySelector('.menu-trends').open=false;
+  closeMenu();
+  drawMetricTrend();
+}));
+document.querySelector('#trend-range').addEventListener('change',drawMetricTrend);
 document.querySelectorAll('.menu-link[data-page]').forEach(link=>link.addEventListener('click',()=>{
   const selected=link.dataset.page;
   document.querySelectorAll('[data-page-panel]').forEach(panel=>panel.hidden=panel.dataset.pagePanel!==selected);
