@@ -153,9 +153,9 @@ function normalize(input) {
   for (const field of fields) {
     const value = input[field];
     const number = value === '' || value == null ? null : Number(value);
-    const whole = ['systolic', 'diastolic', 'pulse'].includes(field);
+    const whole = ['systolic', 'diastolic', 'pulse', 'duration'].includes(field);
     if (number !== null && (!['string','number'].includes(typeof value) || !Number.isFinite(number) ||
-      number < 0 || (whole && (!Number.isInteger(number) || number < 1 || number > 400)) ||
+      number < 0 || (whole && (!Number.isInteger(number) || number < 1 || number > (field === 'duration' ? 180 : 400))) ||
       (field === 'hematocrit' && number > 100) || (field === 'protein' && (number < 5.5 || number > 9.5)) || (['weight','temperature'].includes(field) && number <= 0))) {
       throw new Error('Check the value for ' + field + '.');
     }
@@ -876,7 +876,8 @@ form.addEventListener('submit', async event => {
       return;
     }
     if (type === 'CSL donation' && entryPhase === 'duration') {
-      if (!form.elements.duration.value || Number(form.elements.duration.value) < 1) throw new Error('Enter the donation duration in minutes.');
+      const durationMinutes = Number(form.elements.duration.value);
+      if (!form.elements.duration.value || !Number.isInteger(durationMinutes) || durationMinutes < 1 || durationMinutes > 180) throw new Error('Enter a whole-number donation duration between 1 and 180 minutes.');
       const row = await persistCurrentVisit();
       entryPhase = 'scan';
       cancel.hidden = false;
