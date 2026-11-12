@@ -8,11 +8,11 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180-v2.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
-<link rel="stylesheet" href="style.css?v=menu-icons-refresh-20261112-12">
+<link rel="stylesheet" href="style.css?v=before-donation-20261112-13">
 <script src="menu.js?v=direct-menu-v2-20261112" defer></script>
 <script src="navigation.js?v=direct-menu-v2-20261112" defer></script>
 <script src="jsQR.js?v=1.4.0" defer></script>
-<script src="app.js?v=qr-resume-20261112-14" defer></script>
+<script src="app.js?v=before-donation-20261112-15" defer></script>
 </head>
 <body>
 <header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1><svg class="header-blood-drop" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 4C25 15 12 28 12 40a20 20 0 0 0 40 0C52 28 39 15 32 4Z" fill="#ff3349" stroke="#fff" stroke-width="4"/><path d="M24 39c0 5 3 9 8 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg><span>Donation Log</span></h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
@@ -100,7 +100,7 @@
 <input type="hidden" name="id">
 <div id="visit-meta" class="visit-meta">
 <label>Visit Date<input name="date" type="date" required></label>
-<label>Visit Type<select name="visitType"><option value="CSL donation">CSL</option><option value="Doctor / clinic">Doctor</option><option value="Other">Other</option></select></label>
+<label id="visit-type-field">Visit Type<select name="visitType"><option value="CSL donation">CSL</option><option value="Doctor / clinic">Doctor</option><option value="Other">Other</option></select></label>
 </div>
 <div id="visit-context" class="visit-context" hidden></div>
 <section id="csl-intake-stage" class="intake-flow-step" hidden>
