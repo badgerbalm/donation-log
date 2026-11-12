@@ -100,3 +100,10 @@ dialog::backdrop{background:#12282c99}
 .scan-results h4{margin:0 0 6px}
 .scan-results ul{margin:0;padding-left:20px}
 .scan-results li{padding:3px 0}
+
+/* Accessible slide-out menu */
+.app-menu{box-sizing:border-box;position:fixed;z-index:41;inset:0 0 0 auto;width:min(92vw,440px);height:100dvh;max-height:100dvh;margin:0;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(14px + env(safe-area-inset-bottom,0px));border:0;border-left:4px solid #58c5a5;border-radius:0;background:linear-gradient(180deg,#0b2529,#142d33 55%,#0c2024);color:#f6fffd;overflow:auto;overscroll-behavior:contain;box-shadow:-16px 0 48px #07142655;transform:translateX(105%);transition:transform .22s ease;pointer-events:none}
+.app-menu.open{display:flex;flex-direction:column;gap:10px;transform:translateX(0);pointer-events:auto}
+.menu-backdrop{position:fixed;z-index:40;inset:0;background:#071426aa}
+body.menu-open{overflow:hidden}
+@media(prefers-reduced-motion:reduce){.app-menu{transition:none}}
