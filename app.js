@@ -5,6 +5,7 @@ try { localStorage.removeItem(storageKey); } catch {}
 const apiBase = 'https://donation-log-api.onlinesny.workers.dev/api';
 const donationSessionKey = 'donation-log-google-session-v1';
 const pendingAuthKey = 'donation-log-google-pending-v1';
+const cslDraftKey = 'donation-log-csl-progress-draft-v1';
 const authBase = 'https://daily-workout-auth.onlinesny.workers.dev';
 const fields = ['systolic', 'diastolic', 'pulse', 'weight', 'temperature', 'hematocrit', 'protein', 'duration'];
 const columns = ['date', 'time', 'visitType', ...fields, 'arm', 'notes', 'source'];
@@ -19,6 +20,7 @@ let creatingNew = false;
 let entryPhase = 'intake';
 let qrPreviewUrl = '';
 let activeVisitId = null;
+let activeCslDraft = null;
 let scanWasRead = false;
 let records = [];
 let canWrite = true;
@@ -171,6 +173,57 @@ function localToday() {
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 10);
 }
+const resumableCslPhases = new Set(['details','duration','scan']);
+function saveLocalCslDraft(phase=entryPhase){
+  if(!creatingNew||form.elements.visitType.value!=='CSL donation'||!resumableCslPhases.has(phase))return false;
+  const values=Object.fromEntries(new FormData(form));
+  const draft={...values,id:activeVisitId||values.id||makeVisitId(),visitType:'CSL donation',phase,savedOn:localToday(),savedAt:Date.now(),scanWasRead};
+  try{
+    localStorage.setItem(cslDraftKey,JSON.stringify(draft));
+    activeCslDraft=draft;
+    return true;
+  }catch(error){return false;}
+}
+function clearLocalCslDraft(){
+  try{localStorage.removeItem(cslDraftKey);activeCslDraft=null;return true;}
+  catch(error){return false;}
+}
+function autoSaveCslDraft(){
+  if(!creatingNew||form.elements.visitType.value!=='CSL donation'||!resumableCslPhases.has(entryPhase))return;
+  status.textContent=saveLocalCslDraft(entryPhase)
+    ? 'In-progress CSL details saved on this device.'
+    : 'Could not save the in-progress visit on this device. Keep Donation Log open and retry.';
+}
+async function restoreCslDraft(){
+  let draft;
+  try{draft=JSON.parse(localStorage.getItem(cslDraftKey)||'null');}
+  catch(error){return false;}
+  if(!draft)return false;
+  if(draft.savedOn!==localToday()||!resumableCslPhases.has(draft.phase)||!draft.id){
+    clearLocalCslDraft();
+    return false;
+  }
+  activeCslDraft=draft;
+  activeVisitId=draft.id;
+  const existing=records.find(row=>row.id===draft.id);
+  editing=existing?visitKey(existing):null;
+  creatingNew=true;
+  scanWasRead=Boolean(draft.scanWasRead);
+  for(const name of ['id','date','visitType',...fields,'arm','notes']){
+    if(form.elements[name])form.elements[name].value=draft[name]??'';
+  }
+  form.elements.id.value=draft.id;
+  form.elements.visitType.value='CSL donation';
+  entryPhase=draft.phase;
+  heading.textContent='New Visit';
+  cancel.hidden=false;
+  renderWorkflow();
+  renderEntryDashboard();
+  status.textContent=draft.phase==='scan'
+    ? 'Your in-progress visit was restored from this device. Re-select the CSL screenshot if needed.'
+    : 'Your in-progress visit was restored from this device.';
+  return true;
+}
 function defaultArm() {
   const latest = records.filter(row => row.visitType === 'CSL donation' && (row.arm === 'Left' || row.arm === 'Right')).sort((a,b) => dateTimeKey(b).localeCompare(dateTimeKey(a)))[0];
   if (latest?.arm === 'Left') return 'Right';
@@ -243,8 +296,13 @@ async function loadSharedRecords(data) {
     duplicateIdsToDelete.push(visitKey(manual));
     mergedDuplicates++;
   }
-  records=cleaned;render();drawReport();
-  if(!editing) form.elements.arm.value=defaultArm();
+  records=cleaned;
+  if(activeCslDraft){
+    const resumed=cleaned.find(row=>row.id===activeCslDraft.id);
+    if(resumed)editing=visitKey(resumed);
+  }
+  render();drawReport();
+  if(!editing&&!activeCslDraft) form.elements.arm.value=defaultArm();
   if(duplicateIdsToDelete.length||correctedLabels){
     await save(cleaned);
     for(const id of duplicateIdsToDelete)await apiRequest('/visits',{method:'DELETE',headers:{'content-type':'application/json'},body:JSON.stringify({id})});
@@ -343,10 +401,10 @@ function renderWorkflow() {
       description.textContent = 'Keep this QR visible while CSL scans it at the front desk.';
     } else if (phase === 'details') {
       heading.textContent = 'Before Donation';
-      description.textContent = 'Enter your arm and CSL screening values before donation.';
+      description.textContent = 'Enter your arm and CSL screening values before donation. Progress saves on this device as you go.';
     } else if (phase === 'duration') {
       heading.textContent = 'Donation Duration';
-      description.textContent = 'After your donation, enter how long it took.';
+      description.textContent = 'After your donation, enter how long it took. Progress saves on this device as you go.';
     } else {
       heading.textContent = 'Scan Visit Summary';
       description.textContent = 'Choose the CSL Donation Details screenshot. Review all values before saving.';
@@ -776,7 +834,7 @@ function drawMetricTrend() {
 
 async function persistCurrentVisit({finalize = false} = {}) {
   const input = Object.fromEntries(new FormData(form));
-  const existing = activeRow();
+  const existing = activeRow() || records.find(row => row.id === activeVisitId);
   input.id = activeVisitId || existing?.id || makeVisitId();
   if (existing) input.source = existing.source;
   const merged = {...(existing || {}), ...input, id: input.id};
@@ -790,6 +848,8 @@ async function persistCurrentVisit({finalize = false} = {}) {
   creatingNew = !finalize;
   return row;
 }
+form.addEventListener('input',autoSaveCslDraft);
+form.addEventListener('change',autoSaveCslDraft);
 form.addEventListener('submit', async event => {
   event.preventDefault();
   const button = document.querySelector('#phase-save');
@@ -804,8 +864,9 @@ form.addEventListener('submit', async event => {
       entryPhase = 'duration';
       cancel.hidden = false;
       renderWorkflow();
+      saveLocalCslDraft('duration');
       form.elements.duration.focus();
-      status.textContent = 'Screening details saved. After your donation, enter the duration.';
+      status.textContent = 'Screening details saved to your visit history. Your in-progress visit is also saved on this device.';
       document.querySelector('#dashboard-status').textContent = '';
       return;
     }
@@ -815,11 +876,13 @@ form.addEventListener('submit', async event => {
       entryPhase = 'scan';
       cancel.hidden = false;
       renderWorkflow();
-      status.textContent = 'Duration saved. Scan the CSL visit screenshot to add the remaining readings.';
+      saveLocalCslDraft('scan');
+      status.textContent = 'Duration saved to your visit history. Scan the CSL visit screenshot to add the remaining readings.';
       document.querySelector('#dashboard-status').textContent = '';
       return;
     }
     const row = await persistCurrentVisit({finalize:true});
+    const draftCleared=clearLocalCslDraft();
     editing = null;
     activeVisitId = null;
     creatingNew = false;
@@ -827,7 +890,7 @@ form.addEventListener('submit', async event => {
     scanWasRead = false;
     resetForm();
     const message = 'Saved visit for ' + row.date + '.';
-    status.textContent = message;
+    status.textContent = draftCleared ? message : message + ' The local draft could not be cleared; refresh the app before starting another visit.';
     document.querySelector('#dashboard-status').textContent = message;
   } catch (error) {
     status.textContent = error.message || 'Could not save this visit.';
@@ -836,8 +899,9 @@ form.addEventListener('submit', async event => {
   }
 });
 cancel.addEventListener('click', () => {
+  const hasDraft=saveLocalCslDraft(entryPhase);
   resetForm();
-  status.textContent = 'Visit entry closed. Any saved progress remains in Today’s Visits.';
+  status.textContent = hasDraft ? 'Visit entry closed. Your in-progress CSL draft is saved on this device for today.' : 'Visit entry closed. Any saved progress remains in Today’s Visits.';
 });
 document.querySelector('#phase-back').addEventListener('click', () => {
   if (entryPhase === 'scan') entryPhase = 'duration';
@@ -845,9 +909,11 @@ document.querySelector('#phase-back').addEventListener('click', () => {
   else if (entryPhase === 'qrShow') entryPhase = 'qrCapture';
   else if (entryPhase === 'qrCapture') entryPhase = 'intake';
   renderWorkflow();
+  saveLocalCslDraft(entryPhase);
 });
 form.elements.visitType.addEventListener('change', () => {
   clearScanSelection();
+  clearLocalCslDraft();
   scanWasRead = false;
   const isCsl = form.elements.visitType.value === 'CSL donation';
   if (isCsl) {
@@ -863,6 +929,7 @@ form.elements.visitType.addEventListener('change', () => {
   renderWorkflow();
 });
 document.querySelector('#add-new-visit').addEventListener('click', () => {
+  if(activeCslDraft?.savedOn===localToday()){void restoreCslDraft();return;}
   resetForm();
   creatingNew = true;
   activeVisitId = makeVisitId();
@@ -1540,8 +1607,9 @@ document.querySelector('#qr-checked-in').addEventListener('click',async()=>{
   entryPhase='details';
   renderWorkflow();
   renderEntryDashboard();
+  saveLocalCslDraft('details');
   form.elements.arm.focus();
-  status.textContent='Check-in complete. Enter your arm, hematocrit, and total protein before donating.';
+  status.textContent='Check-in complete. Enter your arm, hematocrit, and total protein before donating. Progress saves on this device as you enter it.';
 });
 const scanImage=document.querySelector('#scan-image');
 const scanReadButton=document.querySelector('#scan-read');
@@ -1762,6 +1830,7 @@ scanReadButton.addEventListener('click',async()=>{
     const found=parseDonationScreenshot(result.data.text||'');
     const inserted=applyScanFindings(found);
     scanWasRead=true;
+    saveLocalCslDraft('scan');
     renderWorkflow();
     const count=[found.date,found.time,found.systolic!==null&&found.diastolic!==null?true:null,found.pulse,found.weight,found.temperature].filter(value=>value!==null&&value!==undefined).length;
     if(!count)scanStatus.textContent='No labeled readings were recognized. Keep the preview open and enter the values manually.';
@@ -1779,4 +1848,4 @@ window.addEventListener('pagehide',()=>{if(scanPreviewUrl)URL.revokeObjectURL(sc
 // Initialize only after all DOM references, including the screenshot scanner, are ready.
 resetForm();
 render();
-void restorePendingQr();
+void restorePendingQr().then(restoredQr=>{if(!restoredQr)void restoreCslDraft();});
