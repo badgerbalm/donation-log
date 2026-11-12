@@ -308,14 +308,20 @@ function renderWorkflow() {
     : 'Save Visit';
   if (!isCsl) {
     heading.textContent = type === 'Doctor / clinic' ? 'Doctor Visit' : 'Other Visit';
+    document.querySelector('#scan-stage-title').textContent = 'Scan Visit Summary';
+    document.querySelector('#scan-help').textContent = 'Choose a Doctor or Other after-visit summary screenshot to read its details.';
     description.textContent = scanWasRead ? 'Review the extracted values, add notes if helpful, then save.' : 'Choose a visit summary screenshot to read its details. You can also enter readings after scanning.';
-  } else if (phase === 'details') {
+  } else {
+    document.querySelector('#scan-stage-title').textContent = 'Scan CSL Confirmation';
+    document.querySelector('#scan-help').textContent = 'Choose a CSL Donation Details screenshot to add the remaining readings.';
+  }
+  if (isCsl && phase === 'details') {
     heading.textContent = row ? 'Before Visit' : 'New Visit';
     description.textContent = 'Enter your visit date and CSL screening values before donation.';
-  } else if (phase === 'duration') {
+  } else if (isCsl && phase === 'duration') {
     heading.textContent = 'Donation Duration';
     description.textContent = 'After your donation, enter how long it took.';
-  } else {
+  } else if (isCsl) {
     heading.textContent = 'Scan Visit Summary';
     description.textContent = 'Choose the CSL Donation Details screenshot. Review all values before saving.';
   }
@@ -334,8 +340,16 @@ function renderLastVisitSummary() {
   const date = document.querySelector('#last-visit-date');
   const details = document.querySelector('#last-visit-details');
   if (!row) {
-    date.textContent = 'No CSL visits saved yet';
-    details.textContent = 'Your latest visit summary will appear here.';
+    if (visitsLoadState === 'loading') {
+      date.textContent = 'Loading visit history…';
+      details.textContent = 'Your latest CSL summary will appear here once your private data loads.';
+    } else if (visitsLoadState === 'error') {
+      date.textContent = 'Sign in to view your last visit';
+      details.textContent = 'Your private visit history has not loaded in this browser yet.';
+    } else {
+      date.textContent = 'No CSL visits saved yet';
+      details.textContent = 'Your latest visit summary will appear here.';
+    }
     return;
   }
   date.textContent = new Date(row.date + 'T12:00:00').toLocaleDateString(undefined, {month:'short',day:'numeric',year:'numeric'});
@@ -893,6 +907,7 @@ async function refreshVisits(showHistoryStatus=true) {
     visitsLoadError=error.message;
     historyStatus.textContent=error.message;
     document.querySelector('#connection-help').hidden=false;
+    renderLastVisitSummary();
   }
   drawReport();
 }
@@ -908,6 +923,7 @@ document.querySelectorAll('.connect-google').forEach(button => button.addEventLi
     visitsLoadError='Sign in to Donation Log to load your private visits.';
     historyStatus.textContent=visitsLoadError;
     document.querySelector('#connection-help').hidden=false;
+    renderLastVisitSummary();
     drawReport();
     return;
   }
@@ -1155,6 +1171,9 @@ function parseDonationScreenshot(text){
   if(dateMatch){
     const month=['january','february','march','april','may','june','july','august','september','october','november','december'].indexOf(dateMatch[1].toLowerCase());
     date=dateMatch[3]+'-'+String(month+1).padStart(2,'0')+'-'+String(Number(dateMatch[2])).padStart(2,'0');
+  } else {
+    const numericDate=normalized.match(/\b(\d{1,2})[/-](\d{1,2})[/-](20\d{2})\b/);
+    if(numericDate&&Number(numericDate[1])<=12&&Number(numericDate[2])<=31)date=numericDate[3]+'-'+String(Number(numericDate[1])).padStart(2,'0')+'-'+String(Number(numericDate[2])).padStart(2,'0');
   }
   const rawTime=normalized.match(/\b(\d{1,2}):(\d{2})\s*(AM|PM)\b/i);
   let time='';
@@ -1167,22 +1186,30 @@ function parseDonationScreenshot(text){
   const weight=parseMetric(/Weight\b/i,[/Blood\s*Pressure\b/i,/Pulse\s*Rate\b/i,/Temperature\b/i],/(\d{2,3})\s*(?:lbs?\b|pounds?\b)/i);
   const pulse=parseMetric(/Pulse\s*Rate\b/i,[/Weight\b/i,/Blood\s*Pressure\b/i,/Temperature\b/i],/(\d{2,3})\s*(?:beats?\s*\/\s*min|bpm)\b/i);
   const temperature=parseMetric(/Temperature\b/i,[/Weight\b/i,/Blood\s*Pressure\b/i,/Pulse\s*Rate\b/i],/(\d{2,3}(?:[.,]\d)?)\s*(?:°\s*)?F\b/i);
+  const genericBp=normalized.match(/\b(?:blood\s*pressure|BP)\b[^\d]{0,24}(\d{2,3})\s*[/:]\s*(\d{2,3})/i);
+  const genericPulse=normalized.match(/\b(?:pulse(?:\s*rate)?|heart\s*rate)\b[^\d]{0,24}(\d{2,3})/i);
+  const genericWeight=normalized.match(/\bweight\b[^\d]{0,18}(\d{2,3}(?:[.,]\d)?)\s*(?:lbs?|pounds?)?/i);
+  const genericTemperature=normalized.match(/\btemperature\b[^\d]{0,18}(\d{2,3}(?:[.,]\d)?)\s*(?:°\s*)?(?:F|fahrenheit)\b/i);
+  const bpValues=bp||genericBp?.slice(1)||null;
+  const pulseValue=pulse||genericPulse?.slice(1)||null;
+  const weightValue=weight||genericWeight?.slice(1)||null;
+  const temperatureValue=temperature||genericTemperature?.slice(1)||null;
   const number=(value,min,max,decimals=false)=>{
     if(!value)return null;
     const parsed=Number(String(value[0]).replace(',','.'));
     return Number.isFinite(parsed)&&parsed>=min&&parsed<=max&&(decimals||Number.isInteger(parsed))?parsed:null;
   };
-  let systolic=number(bp?.[0],60,300);
-  let diastolic=number(bp?.[1],30,200);
+  let systolic=number(bpValues?.[0],60,300);
+  let diastolic=number(bpValues?.[1],30,200);
   if(systolic!==null&&diastolic!==null&&systolic<=diastolic){systolic=null;diastolic=null;}
   return {
     date:date||null,
     time:time||null,
     systolic,
     diastolic,
-    pulse:number(pulse,25,220),
-    weight:number(weight,50,500,true),
-    temperature:number(temperature,80,110,true)
+    pulse:number(pulseValue,25,220),
+    weight:number(weightValue,50,500,true),
+    temperature:number(temperatureValue,80,110,true)
   };
 }
 
