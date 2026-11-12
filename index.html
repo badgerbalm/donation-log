@@ -12,21 +12,26 @@
 <script src="app.js?v=fix-signin-metric-trends-20261111" defer></script>
 </head>
 <body>
-<header><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1>Donation Log</h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-expanded="false" aria-controls="app-menu">Menu</button></div></header>
-<div id="menu-backdrop" class="menu-backdrop" hidden></div>
-<nav id="app-menu" class="app-menu" aria-label="Main menu" aria-hidden="true">
-<div class="menu-top"><strong>Donation Log</strong><button type="button" id="menu-close" class="secondary">Close</button></div>
-<button type="button" data-page="entry" class="menu-link active">Enter a visit</button>
-<button type="button" data-page="report" class="menu-link">Blood pressure report</button>
-<button type="button" data-page="history" class="menu-link">Visit history</button>
-<details class="menu-trends"><summary>Trends</summary><div class="menu-trend-links">
-<button type="button" class="menu-link" data-trend="weight">Weight</button>
-<button type="button" class="menu-link" data-trend="hematocrit">Hematocrit</button>
-<button type="button" class="menu-link" data-trend="protein">Total protein</button>
-<button type="button" class="menu-link" data-trend="temperature">Temperature</button>
-</div></details>
-<button type="button" id="refresh-app" class="menu-link">Refresh app</button>
-</nav>
+<header><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1>Donation Log</h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></header>
+<dialog id="app-menu" aria-labelledby="menu-title">
+<div class="menu-top"><h2 id="menu-title">Donation Log menu</h2><button type="button" id="menu-close" class="secondary" autofocus>Close</button></div>
+<div class="menu-refresh"><button type="button" id="refresh-app">↻ Refresh app</button><p class="muted">Load the latest app and saved visit data.</p></div>
+<div class="menu-content">
+<p class="menu-section-title">VISIT LOG</p>
+<button type="button" data-page="entry" class="menu-link active"><span class="menu-icon">✚</span><span>Enter a visit</span></button>
+<button type="button" data-page="report" class="menu-link"><span class="menu-icon">♥</span><span>Blood pressure report</span></button>
+<button type="button" data-page="history" class="menu-link"><span class="menu-icon">▤</span><span>Visit history</span></button>
+<details class="menu-trends">
+<summary><span class="menu-icon">⌁</span><span>Trends</span></summary>
+<div class="menu-trend-links">
+<button type="button" class="menu-link" data-trend="weight"><span class="menu-icon">⚖</span><span>Weight</span></button>
+<button type="button" class="menu-link" data-trend="hematocrit"><span class="menu-icon">◉</span><span>Hematocrit</span></button>
+<button type="button" class="menu-link" data-trend="protein"><span class="menu-icon">◉</span><span>Total protein</span></button>
+<button type="button" class="menu-link" data-trend="temperature"><span class="menu-icon">♨</span><span>Temperature</span></button>
+</div>
+</details>
+</div>
+</dialog>
 <main>
 <section class="card page" data-page-panel="trend" aria-labelledby="trend-title" hidden>
 <h2 id="trend-title">Blood pressure trend</h2>
