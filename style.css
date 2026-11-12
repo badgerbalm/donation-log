@@ -293,3 +293,8 @@ header h1{display:flex;align-items:center;gap:10px}
 #visit.before-donation-layout .entry-actions{margin-top:12px}
 #visit.before-donation-layout #phase-save{width:100%;min-height:50px}
 @media(max-width:380px){#visit.before-donation-layout .visit-meta label:not([hidden]),#visit.before-donation-layout #csl-fields .grid label{grid-template-columns:minmax(100px,.72fr) minmax(0,1.28fr);gap:8px}}
+
+
+.scan-ocr-debug{margin-top:12px;padding:12px;border:1px solid #b8ded5;border-radius:12px;background:#f3fbf9;color:#164e48}
+.scan-ocr-debug summary{font-weight:750;cursor:pointer}
+.scan-ocr-debug pre{max-height:18rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:0.82rem/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;color:#173a3d;background:#fff;padding:10px;border-radius:8px}
