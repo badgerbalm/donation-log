@@ -583,7 +583,7 @@ menuButton.addEventListener('click',()=>{menu.classList.add('open');menu.setAttr
 document.querySelector('#menu-close').addEventListener('click',()=>{closeMenu();menuButton.focus();});
 backdrop.addEventListener('click',closeMenu);
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenu();});
-document.querySelectorAll('.menu-link').forEach(link=>link.addEventListener('click',()=>{
+document.querySelectorAll('.menu-link[data-page]').forEach(link=>link.addEventListener('click',()=>{
   const selected=link.dataset.page;
   document.querySelectorAll('[data-page-panel]').forEach(panel=>panel.hidden=panel.dataset.pagePanel!==selected);
   document.querySelectorAll('.menu-link').forEach(item=>item.classList.toggle('active',item===link));
