@@ -794,7 +794,7 @@ function drawReport() {
     item.textContent = new Date(event.date + 'T12:00:00').toLocaleDateString() + ' · ' + event.label;
     medications.append(item);
   }
-  const allReadings = records.filter(row => row.systolic !== null && row.diastolic !== null).sort((a,b)=>a.date.localeCompare(b.date));
+  const allReadings = records.filter(row => row.systolic !== null && row.diastolic !== null).sort((a,b)=>(a.date+' '+a.time).localeCompare(b.date+' '+b.time));
   const rangeCutoff = bpChartRange === 'all' ? '' : new Date(Date.now() - ({'3y':1095,'1y':365,'6m':183}[bpChartRange] || 0) * 86400000).toISOString().slice(0,10);
   const readings = rangeCutoff ? allReadings.filter(row => row.date >= rangeCutoff) : allReadings;
   const rangeCount=document.querySelector('#bp-chart-count');if(rangeCount)rangeCount.textContent=readings.length+' of '+allReadings.length+' readings';
