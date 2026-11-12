@@ -283,10 +283,12 @@ header h1{display:flex;align-items:center;gap:10px}
 .workflow-stepper[data-flow="donation"] li.current b{font-weight:850}
 #visit.before-donation-layout .visit-meta{grid-template-columns:1fr;gap:8px;margin:8px 0 12px}
 #visit.before-donation-layout .visit-meta label:not([hidden]),#visit.before-donation-layout #csl-fields .grid label{grid-template-columns:minmax(112px,.78fr) minmax(0,1.22fr);align-items:center;gap:10px}
-#visit.before-donation-layout #csl-fields{border:0;border-radius:0;padding:0;margin:0 0 12px}
-#visit.before-donation-layout #csl-fields legend{font-size:1.02rem;padding:0 4px}
-#visit.before-donation-layout #csl-fields .grid{grid-template-columns:1fr;gap:10px;margin:0}
+#visit.before-donation-layout #csl-fields{margin:0}
+#visit.before-donation-layout #csl-fields .form-step{border:1px solid #cbe9e3;border-radius:14px;padding:10px 12px;margin:8px 0}
+#visit.before-donation-layout #csl-fields .form-step legend{font-size:1rem;padding:0 4px}
+#visit.before-donation-layout #csl-fields .grid{grid-template-columns:1fr;gap:8px;margin:0}
 #visit.before-donation-layout #csl-fields label{font-size:.96rem}
+#visit.before-donation-layout #csl-fields .screening-hint{font-size:.84rem;line-height:1.35;margin:0 0 8px}
 #visit.before-donation-layout #visit-meta input,#visit.before-donation-layout #csl-fields select{min-height:44px}
 #visit.before-donation-layout .entry-actions{margin-top:12px}
 #visit.before-donation-layout #phase-save{width:100%;min-height:50px}
