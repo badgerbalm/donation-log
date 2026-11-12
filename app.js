@@ -70,7 +70,8 @@ async function restoreDonationSignIn() {
   if (params.has('donation_auth') || params.has('donation_auth_error')) {
     let pending;
     try { pending = JSON.parse(sessionStorage.getItem(pendingAuthKey) || 'null'); } catch {}
-    history.replaceState(null, '', location.pathname + location.search);
+    if (typeof window.history?.replaceState === 'function') window.history.replaceState(null, '', location.pathname + location.search);
+    else location.hash = '';
     if (!pending || pending.state !== params.get('donation_state') || Date.now() - pending.created > 900000) {
       sessionStorage.removeItem(pendingAuthKey);
       throw new Error('Google returned to a different browser context. Tap Sign in to Donation Log and try again.');
@@ -572,6 +573,31 @@ fileInput.onchange = async () => {
   finally { fileInput.value = ''; }
 };
 
+async function refreshAllData() {
+  const button = document.querySelector('#refresh-data');
+  const statusNode = document.querySelector('#refresh-status');
+  if (button.disabled) return;
+  button.disabled = true;
+  statusNode.textContent = 'Refreshing visits and medication timeline…';
+  try {
+    await refreshVisits(false);
+    if (visitsLoadState !== 'loaded') {
+      statusNode.textContent = visitsLoadError || 'Could not refresh Donation Log data.';
+      return;
+    }
+    const response = await apiRequest('/medications');
+    const data = await response.json();
+    medicationEvents = Array.isArray(data.events) ? data.events : [];
+    drawReport();
+    statusNode.textContent = 'Visits and medication timeline refreshed.';
+    historyStatus.textContent = 'History refreshed: ' + records.length + ' visits loaded.';
+  } catch (error) {
+    statusNode.textContent = 'Visits loaded, but medication timeline could not be refreshed: ' + error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function refreshVisits(showHistoryStatus=true) {
   visitsLoadState='loading';
   visitsLoadError='';
@@ -618,8 +644,7 @@ document.querySelectorAll('.connect-google').forEach(button => button.addEventLi
     drawReport();
   }).catch(()=>{medicationEvents=[];drawReport();});
 })();
-document.querySelector('#visit-refresh').addEventListener('click',()=>refreshVisits(true));
-document.querySelector('#refresh-report').addEventListener('click',()=>refreshVisits(false));
+document.querySelector('#refresh-data').addEventListener('click', refreshAllData);
 function drawReport() {
   const medications = document.querySelector('#medications');
   medications.replaceChildren();
