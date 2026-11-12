@@ -1706,6 +1706,26 @@ async function prepareScanImage(file){
     }finally{URL.revokeObjectURL(url);}
   }catch{return file;}
 }
+async function cropScanImage(file,topRatio,heightRatio){
+  let url='';
+  try{
+    url=URL.createObjectURL(file);
+    const image=new Image();
+    await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url;});
+    const width=image.naturalWidth||image.width,height=image.naturalHeight||image.height;
+    const y=Math.max(0,Math.round(height*topRatio));
+    const cropHeight=Math.min(height-y,Math.round(height*heightRatio));
+    if(!width||cropHeight<1)return null;
+    const canvas=document.createElement('canvas');
+    canvas.width=width;canvas.height=cropHeight;
+    const context=canvas.getContext('2d');if(!context)return null;
+    context.fillStyle='#fff';context.fillRect(0,0,width,cropHeight);
+    context.filter='contrast(1.2)';
+    context.drawImage(image,0,y,width,cropHeight,0,0,width,cropHeight);
+    return await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+  }catch{return null;}
+  finally{if(url)URL.revokeObjectURL(url);}
+}
 function scanFieldCount(found){
   return [found.date,found.time,found.systolic,found.diastolic,found.pulse,found.weight,found.temperature]
     .filter(value=>value!==null&&value!==undefined&&value!=='').length;
@@ -1772,7 +1792,7 @@ function parseDonationScreenshot(text){
   const pulse=parseMetric(/Pulse\s*Rate\b/i,[/Weight\b/i,/Blood\s*Pressure\b/i,/Temperature\b/i],/(\d{2,3})\s*(?:beats?\s*\/\s*min|bpm)\b/i);
   const temperature=parseMetric(/Temperature\b/i,[/Weight\b/i,/Blood\s*Pressure\b/i,/Pulse\s*Rate\b/i],/(\d{2,3}(?:[.,]\d)?)\s*(?:°\s*)?F\b/i);
   const genericBp=normalized.match(/\b(?:blood\s*pressure|BP)\b[^\d]{0,24}(\d{2,3})\s*[/:]\s*(\d{2,3})/i);
-  const unitBp=normalized.match(/\b(\d{2,3})\s*\/\s*(\d{2,3})\s*mm\s*Hg\b/i);
+  const unitBp=normalized.match(/\b(\d{2,3})\s*(?:\/|[|Il])?\s*(\d{2,3})\s*mm\s*Hg\b/i);
   const genericPulse=normalized.match(/\b(?:pulse(?:\s*rate)?|heart\s*rate)\b[^\d]{0,24}(\d{2,3})/i);
   const genericWeight=normalized.match(/\bweight\b[^\d]{0,18}(\d{2,3}(?:[.,]\d)?)\s*(?:lbs?|pounds?)?/i);
   const unitWeight=normalized.match(/\b(\d{2,3}(?:[.,]\d)?)\s*(?:lbs?|pounds?)\b/i);
@@ -1891,6 +1911,26 @@ scanReadButton.addEventListener('click',async()=>{
       const secondPass=await worker.recognize(ocrFile);
       found=mergeScanFindings(found,parseDonationScreenshot(secondPass.data.text||''));
       confidence=Math.max(confidence,secondPass.data.confidence||0);
+    }
+    if(!found.date||!found.time){
+      scanStatus.textContent='Reading the visit date and time area…';
+      const topCrop=await cropScanImage(ocrFile,0.04,0.40);
+      if(topCrop){
+        await worker.setParameters({tessedit_pageseg_mode:'11'});
+        const topPass=await worker.recognize(topCrop);
+        found=mergeScanFindings(found,parseDonationScreenshot(topPass.data.text||''));
+        confidence=Math.max(confidence,topPass.data.confidence||0);
+      }
+    }
+    if(found.systolic===null||found.diastolic===null||found.weight===null){
+      scanStatus.textContent='Reading the health measurements area…';
+      const healthCrop=await cropScanImage(ocrFile,0.42,0.50);
+      if(healthCrop){
+        await worker.setParameters({tessedit_pageseg_mode:'11'});
+        const healthPass=await worker.recognize(healthCrop);
+        found=mergeScanFindings(found,parseDonationScreenshot(healthPass.data.text||''));
+        confidence=Math.max(confidence,healthPass.data.confidence||0);
+      }
     }
     const inserted=applyScanFindings(found);
     scanWasRead=true;
