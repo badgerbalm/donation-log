@@ -523,12 +523,13 @@ function drawMetricTrend() {
     add('text',{x:58,y:yy+4,'text-anchor':'end','font-size':12,fill:'#4d6364'},trendNumber(value,spec.decimals ?? 0));
   }
   add('line',{x1:70,x2:800,y1:bottom,y2:bottom,stroke:'#617777'});
+  const showYearLabels = last - first > 330 * 24 * 60 * 60 * 1000;
   const labelCount = Math.min(5, readings.length);
   for(let i=0;i<labelCount;i++){
     const index = labelCount===1 ? readings.length-1 : Math.round(i*(readings.length-1)/(labelCount-1));
     const row = readings[index], xx = x(dateRange[index]);
     add('line',{x1:xx,x2:xx,y1:bottom,y2:bottom+5,stroke:'#617777'});
-    add('text',{x:xx,y:bottom+25,'text-anchor':'middle','font-size':11,fill:'#4d6364'},trendDateLabel(row.date,false));
+    add('text',{x:xx,y:bottom+25,'text-anchor':'middle','font-size':11,fill:'#4d6364'},trendDateLabel(row.date,showYearLabels));
   }
   for(const [field,name,color] of spec.fields){
     const series = readings.filter(row=>Number.isFinite(row[field]));
