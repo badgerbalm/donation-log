@@ -1623,6 +1623,8 @@ const scanPreview=document.querySelector('#scan-preview');
 const scanStatus=document.querySelector('#scan-status');
 const scanResults=document.querySelector('#scan-results');
 const scanFindings=document.querySelector('#scan-findings');
+const scanOcrDetails=document.querySelector('#scan-ocr-debug');
+const scanOcrText=document.querySelector('#scan-ocr-text');
 let scanPreviewUrl='';
 let tesseractScriptPromise=null;
 
@@ -1639,6 +1641,8 @@ function clearScanSelection(){
   scanStatus.textContent='';
   scanResults.hidden=true;
   scanFindings.replaceChildren();
+  scanOcrDetails.hidden=true;
+  scanOcrText.textContent='';
 }
 function acceptScanImage(file){
   if(!file)return false;
@@ -1903,12 +1907,14 @@ scanReadButton.addEventListener('click',async()=>{
     const ocrFile=await prepareScanImage(file);
     await worker.setParameters({tessedit_pageseg_mode:'11'});
     const firstPass=await worker.recognize(ocrFile);
+    const ocrPassages=['Full image · sparse text layout\n'+(firstPass.data.text||'')];
     let found=parseDonationScreenshot(firstPass.data.text||'');
     let confidence=firstPass.data.confidence||0;
     if(scanFieldCount(found)<7){
       scanStatus.textContent='Checking screenshot layout for missed readings…';
       await worker.setParameters({tessedit_pageseg_mode:'6'});
       const secondPass=await worker.recognize(ocrFile);
+      ocrPassages.push('Full image · block layout\n'+(secondPass.data.text||''));
       found=mergeScanFindings(found,parseDonationScreenshot(secondPass.data.text||''));
       confidence=Math.max(confidence,secondPass.data.confidence||0);
     }
@@ -1918,6 +1924,7 @@ scanReadButton.addEventListener('click',async()=>{
       if(topCrop){
         await worker.setParameters({tessedit_pageseg_mode:'11'});
         const topPass=await worker.recognize(topCrop);
+        ocrPassages.push('Date/time crop · sparse text layout\n'+(topPass.data.text||''));
         found=mergeScanFindings(found,parseDonationScreenshot(topPass.data.text||''));
         confidence=Math.max(confidence,topPass.data.confidence||0);
       }
@@ -1928,10 +1935,13 @@ scanReadButton.addEventListener('click',async()=>{
       if(healthCrop){
         await worker.setParameters({tessedit_pageseg_mode:'11'});
         const healthPass=await worker.recognize(healthCrop);
+        ocrPassages.push('Health readings crop · sparse text layout\n'+(healthPass.data.text||''));
         found=mergeScanFindings(found,parseDonationScreenshot(healthPass.data.text||''));
         confidence=Math.max(confidence,healthPass.data.confidence||0);
       }
     }
+    scanOcrText.textContent=ocrPassages.join('\n\n---\n\n');
+    scanOcrDetails.hidden=false;
     const inserted=applyScanFindings(found);
     scanWasRead=true;
     saveLocalCslDraft('scan');
