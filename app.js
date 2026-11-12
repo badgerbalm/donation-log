@@ -354,6 +354,7 @@ function renderLastVisitSummary() {
   }
   date.textContent = new Date(row.date + 'T12:00:00').toLocaleDateString(undefined, {month:'short',day:'numeric',year:'numeric'});
   details.textContent = [
+    row.arm ? 'Arm ' + row.arm : '',
     row.hematocrit !== null ? 'Hematocrit ' + row.hematocrit + '%' : '',
     row.protein !== null ? 'Protein ' + row.protein.toFixed(1) + ' g/dL' : '',
     row.duration !== null ? 'Duration ' + row.duration + ' min' : ''
