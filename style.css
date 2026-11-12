@@ -18,17 +18,19 @@ dialog#app-menu::backdrop{background:#071426aa}
 .menu-refresh p{margin:8px 2px 0;color:#cbd5d3;line-height:1.45}
 .menu-content{display:flex;flex-direction:column;gap:8px;overflow:auto;flex:1;padding:6px 4px}
 .menu-section-title{margin:8px 0 4px;color:#cbd5d3;font-size:11px;font-weight:850;letter-spacing:1.4px}
-.menu-link{display:flex;align-items:center;gap:14px;width:100%;margin:0;padding:14px 8px;border:0;border-radius:8px;background:transparent;color:#f6fffd;text-align:left;font-size:16px;font-weight:750}
-.menu-link.active{background:#ffffff14;border-left:3px solid #58c5a5;color:#fff}
+.menu-link{display:flex;align-items:center;gap:14px;width:100%;margin:0;padding:12px 10px;border:1px solid #b7d2cb;border-radius:12px;background:#e6f4f1;color:#123f3c;text-align:left;font-size:16px;font-weight:750}
+.menu-link:hover{background:#d3ebe5;border-color:#8fbdb1}
+.menu-link.active{background:#58c5a5;border-color:#82dac3;border-left:4px solid #f3fffc;color:#082c2e}
+.menu-content .menu-icon{border-color:#b7d2cb;background:#cfe8e1;color:#134c47}
 .menu-icon{display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;border:1px solid #ffffff20;border-radius:10px;background:#ffffff16;font-size:20px;line-height:1}
 .menu-trends{margin:0}
-.menu-trends>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:14px;min-height:48px;padding:8px;border-radius:8px;font-weight:750}
+.menu-trends>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:14px;min-height:48px;padding:8px;border:1px solid #b7d2cb;border-radius:12px;background:#e6f4f1;color:#123f3c;font-weight:750}
 .menu-trends>summary::-webkit-details-marker{display:none}
-.menu-trends>summary::after{content:"+";margin-left:auto;color:#d8e4e4;font-size:1.2rem}
+.menu-trends>summary::after{content:"+";margin-left:auto;color:#155447;font-size:1.2rem}
 .menu-trends[open]>summary::after{content:"−"}
 .menu-trend-links{padding-left:10px}
 .menu-trend-links .menu-link{font-size:15px;padding:12px 8px}
-.menu-trend-links .menu-link.active{background:#ffffff12}
+.menu-trend-links .menu-link.active{background:#58c5a5;border-color:#82dac3}
 .trend-range-label{max-width:280px;margin:14px 0}
 .trend-summary{background:#f1f6f5;border-radius:9px;padding:12px;margin:14px 0}
 #metric-trend-chart{display:block;width:100%;min-width:540px;height:370px}
