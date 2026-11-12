@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
 <link rel="stylesheet" href="style.css">
-<script src="app.js?v=donation-menu-refresh-20261111" defer></script>
+<script src="app.js?v=donation-app-reload-20261111" defer></script>
 </head>
 <body>
 <header><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1>Donation Log</h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-expanded="false" aria-controls="app-menu">Menu</button></div></header>
@@ -19,10 +19,7 @@
 <button type="button" data-page="entry" class="menu-link active">Enter a visit</button>
 <button type="button" data-page="report" class="menu-link">Blood pressure report</button>
 <button type="button" data-page="history" class="menu-link">Visit history</button>
-<button type="button" id="refresh-data" class="menu-link">Refresh all data</button>
-<p id="refresh-status" class="muted" role="status" aria-live="polite">Refresh visits and medication timeline.</p>
-<button type="button" class="menu-link connect-google">Sign in to Donation Log</button>
-<p class="muted connection-status" role="status" aria-live="polite">Sign in here to load your private visit history.</p>
+<button type="button" id="refresh-app" class="menu-link">Refresh app</button>
 </nav>
 <main>
 <section class="card report page" data-page-panel="report" aria-labelledby="report-title" hidden>
