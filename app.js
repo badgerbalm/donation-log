@@ -916,48 +916,11 @@ document.querySelector('#save-chart-image').addEventListener('click',async()=>{
     image.src=url;
   }catch{status.textContent='Could not create the image. Please try again.';}
 });
-const menu=document.querySelector('#app-menu');
-const menuButton=document.querySelector('#menu-open');
-const menuBackdrop=document.querySelector('#menu-backdrop');
-function openMenu(){
-  menu.inert=false;
-  menu.setAttribute('aria-hidden','false');
-  menuBackdrop.hidden=false;
-  document.body.classList.add('menu-open');
-  requestAnimationFrame(()=>menu.classList.add('open'));
-  menuButton.setAttribute('aria-expanded','true');
-  document.querySelector('#menu-close').focus();
-}
-function closeMenu(returnFocus=true){
-  if(!menu.classList.contains('open'))return;
-  menu.classList.remove('open');
-  menu.inert=true;
-  menu.setAttribute('aria-hidden','true');
-  menuBackdrop.hidden=true;
-  document.body.classList.remove('menu-open');
-  menuButton.setAttribute('aria-expanded','false');
-  if(returnFocus)menuButton.focus();
-}
-menuButton.addEventListener('click',()=>menu.classList.contains('open')?closeMenu():openMenu());
-document.querySelector('#menu-close').addEventListener('click',()=>closeMenu());
-menuBackdrop.addEventListener('click',()=>closeMenu());
-document.addEventListener('keydown',event=>{
-  if(!menu.classList.contains('open'))return;
-  if(event.key==='Escape'){event.preventDefault();closeMenu();return;}
-  if(event.key!=='Tab')return;
-  const focusable=[...menu.querySelectorAll('button:not([disabled]),summary,a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled])')]
-    .filter(element=>element.getClientRects().length>0);
-  if(!focusable.length)return;
-  const first=focusable[0],last=focusable[focusable.length-1];
-  if(event.shiftKey&&(document.activeElement===first||!menu.contains(document.activeElement))){event.preventDefault();last.focus();}
-  else if(!event.shiftKey&&(document.activeElement===last||!menu.contains(document.activeElement))){event.preventDefault();first.focus();}
-});
 document.querySelectorAll('.menu-link[data-trend]').forEach(link=>link.addEventListener('click',()=>{
   activeTrend=link.dataset.trend;
   document.querySelectorAll('[data-page-panel]').forEach(panel=>panel.hidden=panel.dataset.pagePanel!=='trend');
   document.querySelectorAll('.menu-link').forEach(item=>item.classList.toggle('active',item===link));
   document.querySelector('.menu-trends').open=false;
-  closeMenu(false);
   drawMetricTrend();
 }));
 document.querySelector('#trend-range').addEventListener('change',drawMetricTrend);
@@ -966,7 +929,6 @@ document.querySelectorAll('.menu-link[data-page]').forEach(link=>link.addEventLi
   const selected=link.dataset.page;
   document.querySelectorAll('[data-page-panel]').forEach(panel=>panel.hidden=panel.dataset.pagePanel!==selected);
   document.querySelectorAll('.menu-link').forEach(item=>item.classList.toggle('active',item===link));
-  closeMenu();
 }));
 const chartToggle=document.querySelector('#toggle-bp-chart');
 chartToggle.addEventListener('click',()=>{
