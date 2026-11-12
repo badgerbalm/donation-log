@@ -1151,13 +1151,39 @@ const qrDisplay=document.querySelector('#qr-display');
 const qrUseButton=document.querySelector('#use-qr');
 const qrPasteButton=document.querySelector('#paste-qr-image');
 const qrStatus=document.querySelector('#qr-status');
+const qrCropButton=document.querySelector('#crop-qr');
+const qrCropEditor=document.querySelector('#qr-crop-editor');
+const qrCropFrame=document.querySelector('#qr-crop-frame');
+const qrCropSource=document.querySelector('#qr-crop-source');
+const qrCropSelection=document.querySelector('#qr-crop-selection');
+const qrApplyCropButton=document.querySelector('#apply-qr-crop');
+const qrUseFullButton=document.querySelector('#use-full-qr');
+let qrSourceUrl='';
+let qrDragStart=null;
+let qrCropRect=null;
+function replaceQrPreviewUrl(url){
+  if(qrPreviewUrl&&qrPreviewUrl!==qrSourceUrl)URL.revokeObjectURL(qrPreviewUrl);
+  qrPreviewUrl=url;
+  qrPreview.src=url;
+  qrPreview.hidden=false;
+  qrDisplay.src=url;
+  qrDisplay.hidden=true;
+}
 function clearQrSelection(){
-  if(qrPreviewUrl)URL.revokeObjectURL(qrPreviewUrl);
+  for(const url of new Set([qrPreviewUrl,qrSourceUrl]))if(url)URL.revokeObjectURL(url);
   qrPreviewUrl='';
+  qrSourceUrl='';
+  qrCropRect=null;
+  qrDragStart=null;
   qrPreview.removeAttribute('src');
   qrPreview.hidden=true;
   qrDisplay.removeAttribute('src');
   qrDisplay.hidden=true;
+  qrCropSource.removeAttribute('src');
+  qrCropEditor.hidden=true;
+  qrCropSelection.hidden=true;
+  qrApplyCropButton.disabled=true;
+  qrCropButton.disabled=true;
   qrImage.value='';
   qrUseButton.disabled=true;
   document.querySelector('#qr-file-name').textContent='No QR screenshot selected yet';
@@ -1165,17 +1191,16 @@ function clearQrSelection(){
 }
 function selectQrImage(file){
   if(!file)return false;
-  if(!file.type.startsWith('image/')){qrStatus.textContent='Choose an image screenshot of the CSL QR code.';return false;}
-  if(file.size>20*1024*1024){qrStatus.textContent='This image is over 20 MB. Choose a smaller screenshot.';return false;}
-  if(qrPreviewUrl)URL.revokeObjectURL(qrPreviewUrl);
-  qrPreviewUrl=URL.createObjectURL(file);
-  qrPreview.src=qrPreviewUrl;
-  qrPreview.hidden=false;
-  qrDisplay.src=qrPreviewUrl;
-  qrDisplay.hidden=true;
+  if(!file.type.startsWith('image/')){clearQrSelection();qrStatus.textContent='Choose an image screenshot of the CSL QR code.';return false;}
+  if(file.size>20*1024*1024){clearQrSelection();qrStatus.textContent='This image is over 20 MB. Choose a smaller screenshot.';return false;}
+  clearQrSelection();
+  qrSourceUrl=URL.createObjectURL(file);
+  qrCropSource.src=qrSourceUrl;
+  replaceQrPreviewUrl(URL.createObjectURL(file));
   document.querySelector('#qr-file-name').textContent=file.name||'Pasted image from clipboard';
-  qrUseButton.disabled=false;
-  qrStatus.textContent='QR screenshot is ready. It stays in this browser only.';
+  qrCropButton.disabled=false;
+  qrUseButton.disabled=true;
+  qrStatus.textContent='To make the desk code large, crop around the QR code. The screenshot stays on this device.';
   return true;
 }
 function openCslIntakePage(){
@@ -1210,8 +1235,81 @@ qrPasteButton.addEventListener('click',async()=>{
     qrPasteButton.disabled=false;
   }
 });
+qrCropButton.addEventListener('click',()=>{
+  qrCropEditor.hidden=false;
+  qrCropSelection.hidden=true;
+  qrCropRect=null;
+  qrApplyCropButton.disabled=true;
+  qrStatus.textContent='Drag around the QR code, keeping all four corner squares inside the selection.';
+});
+function qrCropPoint(event){
+  const rect=qrCropFrame.getBoundingClientRect();
+  return {x:Math.max(0,Math.min(rect.width,event.clientX-rect.left)),y:Math.max(0,Math.min(rect.height,event.clientY-rect.top))};
+}
+function updateQrCropSelection(point){
+  const x=Math.min(qrDragStart.x,point.x),y=Math.min(qrDragStart.y,point.y);
+  const width=Math.abs(point.x-qrDragStart.x),height=Math.abs(point.y-qrDragStart.y);
+  qrCropSelection.style.left=x+'px';
+  qrCropSelection.style.top=y+'px';
+  qrCropSelection.style.width=width+'px';
+  qrCropSelection.style.height=height+'px';
+  qrCropSelection.hidden=false;
+  qrCropRect={x,y,width,height};
+  qrApplyCropButton.disabled=width<36||height<36;
+}
+qrCropFrame.addEventListener('pointerdown',event=>{
+  if(!qrCropSource.naturalWidth)return;
+  event.preventDefault();
+  qrCropFrame.setPointerCapture(event.pointerId);
+  qrDragStart=qrCropPoint(event);
+  updateQrCropSelection(qrDragStart);
+});
+qrCropFrame.addEventListener('pointermove',event=>{
+  if(qrDragStart)updateQrCropSelection(qrCropPoint(event));
+});
+function finishQrCropDrag(event){
+  if(!qrDragStart)return;
+  updateQrCropSelection(qrCropPoint(event));
+  qrDragStart=null;
+  if(!qrApplyCropButton.disabled)qrStatus.textContent='QR area selected. Review the square crop, then use it for the desk screen.';
+}
+qrCropFrame.addEventListener('pointerup',finishQrCropDrag);
+qrCropFrame.addEventListener('pointercancel',finishQrCropDrag);
+qrApplyCropButton.addEventListener('click',()=>{
+  if(!qrCropRect||qrApplyCropButton.disabled)return;
+  const frame=qrCropFrame.getBoundingClientRect();
+  const scaleX=qrCropSource.naturalWidth/frame.width;
+  const scaleY=qrCropSource.naturalHeight/frame.height;
+  const centerX=(qrCropRect.x+qrCropRect.width/2)*scaleX;
+  const centerY=(qrCropRect.y+qrCropRect.height/2)*scaleY;
+  const requestedSide=Math.max(qrCropRect.width*scaleX,qrCropRect.height*scaleY)*1.14;
+  const side=Math.min(requestedSide,qrCropSource.naturalWidth,qrCropSource.naturalHeight);
+  const sourceX=Math.max(0,Math.min(qrCropSource.naturalWidth-side,centerX-side/2));
+  const sourceY=Math.max(0,Math.min(qrCropSource.naturalHeight-side,centerY-side/2));
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.max(1,Math.round(side));
+  canvas.height=canvas.width;
+  const context=canvas.getContext('2d');
+  if(!context){qrStatus.textContent='Could not crop this image. Try another screenshot.';return;}
+  context.imageSmoothingEnabled=false;
+  context.drawImage(qrCropSource,sourceX,sourceY,side,side,0,0,canvas.width,canvas.height);
+  canvas.toBlob(blob=>{
+    if(!blob){qrStatus.textContent='Could not create the cropped QR image. Try again.';return;}
+    replaceQrPreviewUrl(URL.createObjectURL(blob));
+    qrCropEditor.hidden=true;
+    qrUseButton.disabled=false;
+    qrStatus.textContent='QR cropped for a large desk display. It stays in this browser only.';
+  },'image/png');
+});
+qrUseFullButton.addEventListener('click',()=>{
+  if(!qrSourceUrl)return;
+  replaceQrPreviewUrl(qrSourceUrl);
+  qrCropEditor.hidden=true;
+  qrUseButton.disabled=false;
+  qrStatus.textContent='Using the full screenshot. If the QR looks small at the desk, crop around it first.';
+});
 qrUseButton.addEventListener('click',()=>{
-  if(!qrPreviewUrl)return;
+  if(!qrPreviewUrl||qrUseButton.disabled)return;
   entryPhase='qrShow';
   renderWorkflow();
   renderEntryDashboard();

@@ -8,10 +8,10 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180-v2.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
-<link rel="stylesheet" href="style.css?v=donation-workflow-20261112-6">
+<link rel="stylesheet" href="style.css?v=donation-qr-crop-20261112-9">
 <script src="menu.js?v=direct-menu-v2-20261112" defer></script>
 <script src="navigation.js?v=direct-menu-v2-20261112" defer></script>
-<script src="app.js?v=donation-clipboard-20261112-8" defer></script>
+<script src="app.js?v=donation-qr-crop-20261112-9" defer></script>
 </head>
 <body>
 <header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1>Donation Log</h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
@@ -115,6 +115,12 @@
 <label class="scan-upload"><span class="scan-upload-button">▧ Choose QR Screenshot</span><span id="qr-file-name" class="scan-file-name">No QR screenshot selected yet</span><input type="file" id="qr-image" accept="image/*"></label>
 <div class="actions qr-capture-actions"><button type="button" id="paste-qr-image" class="secondary">Paste from clipboard</button></div>
 <img id="qr-preview" class="qr-preview" alt="Selected CSL check-in QR screenshot preview" hidden>
+<div class="actions qr-crop-actions"><button type="button" id="crop-qr" class="secondary" disabled>Crop QR for large display</button></div>
+<section id="qr-crop-editor" class="qr-crop-editor" hidden>
+<p>Drag a square around the QR code. The selected area will fill the front desk screen.</p>
+<div id="qr-crop-frame" class="qr-crop-frame"><img id="qr-crop-source" alt="Original CSL screenshot for QR cropping"><div id="qr-crop-selection" class="qr-crop-selection" hidden></div></div>
+<div class="actions qr-crop-editor-actions"><button type="button" id="apply-qr-crop" disabled>Use cropped QR</button><button type="button" id="use-full-qr" class="secondary">Use full screenshot</button></div>
+</section>
 <div class="actions"><button type="button" id="use-qr" disabled>Use this QR</button></div>
 <p id="qr-status" class="muted" role="status" aria-live="polite"></p>
 </section>
