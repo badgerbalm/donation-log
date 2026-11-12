@@ -833,6 +833,7 @@ function drawMetricTrend() {
 }
 
 async function persistCurrentVisit({finalize = false} = {}) {
+  if(visitsLoadState!=='loaded')throw new Error('Your draft is saved on this device, but visit history is not loaded yet. Sign in and refresh before saving it to your visit history.');
   const input = Object.fromEntries(new FormData(form));
   const existing = activeRow() || records.find(row => row.id === activeVisitId);
   input.id = activeVisitId || existing?.id || makeVisitId();
