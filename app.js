@@ -1384,14 +1384,108 @@ qrUseFullButton.addEventListener('click',()=>{
   qrUseButton.disabled=false;
   qrStatus.textContent='Using the full screenshot. If the QR looks small at the desk, crop around it first.';
 });
-qrUseButton.addEventListener('click',()=>{
+const pendingQrDbName='donation-log-local-checkin-v1';
+let pendingQrPersisted=false;
+function openPendingQrDb(){
+  return new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window)){reject(new Error('This browser does not support local QR storage.'));return;}
+    const request=indexedDB.open(pendingQrDbName,1);
+    request.onupgradeneeded=()=>{
+      if(!request.result.objectStoreNames.contains('checkins'))request.result.createObjectStore('checkins');
+    };
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error||new Error('Could not open local QR storage.'));
+  });
+}
+async function savePendingQr(value){
+  const db=await openPendingQrDb();
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction('checkins','readwrite');
+    tx.objectStore('checkins').put(value,'active');
+    tx.oncomplete=resolve;
+    tx.onerror=()=>reject(tx.error||new Error('Could not save the QR on this device.'));
+    tx.onabort=()=>reject(tx.error||new Error('Could not save the QR on this device.'));
+  }).finally(()=>db.close());
+}
+async function readPendingQr(){
+  const db=await openPendingQrDb();
+  return await new Promise((resolve,reject)=>{
+    const tx=db.transaction('checkins','readonly');
+    const request=tx.objectStore('checkins').get('active');
+    request.onsuccess=()=>resolve(request.result||null);
+    request.onerror=()=>reject(request.error||new Error('Could not read the saved QR.'));
+    tx.onerror=()=>reject(tx.error||new Error('Could not read the saved QR.'));
+    tx.oncomplete=()=>db.close();
+  });
+}
+async function clearPendingQr(){
+  const db=await openPendingQrDb();
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction('checkins','readwrite');
+    tx.objectStore('checkins').delete('active');
+    tx.oncomplete=resolve;
+    tx.onerror=()=>reject(tx.error||new Error('Could not clear the saved QR.'));
+    tx.onabort=()=>reject(tx.error||new Error('Could not clear the saved QR.'));
+  }).finally(()=>db.close());
+}
+async function restorePendingQr(){
+  try{
+    const saved=await readPendingQr();
+    if(!saved)return false;
+    if(saved.date!==localToday()||!(saved.blob instanceof Blob)){
+      await clearPendingQr().catch(()=>{});
+      document.querySelector('#dashboard-status').textContent='The saved CSL QR is no longer valid for today. Start a new visit to get a current code.';
+      return false;
+    }
+    activeVisitId=saved.id||makeVisitId();
+    creatingNew=true;
+    pendingQrPersisted=true;
+    form.elements.id.value=activeVisitId;
+    form.elements.date.value=saved.date;
+    form.elements.visitType.value='CSL donation';
+    form.elements.arm.value=saved.arm||defaultArm();
+    entryPhase='qrShow';
+    qrSourceUrl=URL.createObjectURL(saved.blob);
+    replaceQrPreviewUrl(URL.createObjectURL(saved.blob));
+    document.querySelector('#qr-file-name').textContent='Saved on this device';
+    renderWorkflow();
+    renderEntryDashboard();
+    status.textContent='Your CSL check-in QR is ready. Show it at the front desk.';
+    return true;
+  }catch(error){
+    document.querySelector('#dashboard-status').textContent='Could not restore the saved CSL QR on this device. You can choose it again from the screenshot or clipboard.';
+    return false;
+  }
+}
+qrUseButton.addEventListener('click',async()=>{
   if(!qrPreviewUrl||qrUseButton.disabled)return;
+  qrUseButton.disabled=true;
+  status.textContent='Saving your check-in QR on this device…';
+  try{
+    const response=await fetch(qrPreviewUrl);
+    const blob=await response.blob();
+    const pendingId=activeVisitId||form.elements.id.value||makeVisitId();
+    await savePendingQr({blob,date:form.elements.date.value,id:pendingId,arm:form.elements.arm.value,savedAt:Date.now()});
+    activeVisitId=pendingId;
+    form.elements.id.value=activeVisitId;
+    pendingQrPersisted=true;
+  }catch(error){
+    pendingQrPersisted=false;
+  }
   entryPhase='qrShow';
   renderWorkflow();
   renderEntryDashboard();
-  status.textContent='Show this QR at the CSL front desk. Continue after check-in.';
+  status.textContent=pendingQrPersisted
+    ? 'Your QR is saved on this device. Reopen Donation Log at CSL to show it at the front desk.'
+    : 'Show this QR at the CSL front desk. Keep Donation Log open until you check in; this browser could not save it for later.';
 });
-document.querySelector('#qr-checked-in').addEventListener('click',()=>{
+document.querySelector('#qr-checked-in').addEventListener('click',async()=>{
+  const button=document.querySelector('#qr-checked-in');
+  button.disabled=true;
+  if(pendingQrPersisted){
+    try{await clearPendingQr();pendingQrPersisted=false;}
+    catch(error){button.disabled=false;status.textContent='Could not clear the saved QR. Keep this screen open and try again.';return;}
+  }
   clearQrSelection();
   entryPhase='details';
   renderWorkflow();
@@ -1635,3 +1729,4 @@ window.addEventListener('pagehide',()=>{if(scanPreviewUrl)URL.revokeObjectURL(sc
 // Initialize only after all DOM references, including the screenshot scanner, are ready.
 resetForm();
 render();
+void restorePendingQr();
