@@ -821,12 +821,12 @@ drawReport();
 document.querySelector('#print-report').addEventListener('click',()=>window.print());
 const menu=document.querySelector('#app-menu');
 const menuButton=document.querySelector('#menu-open');
-const backdrop=document.querySelector('#menu-backdrop');
-function closeMenu(){menu.classList.remove('open');menu.setAttribute('aria-hidden','true');menuButton.setAttribute('aria-expanded','false');backdrop.hidden=true;}
-menuButton.addEventListener('click',()=>{menu.classList.add('open');menu.setAttribute('aria-hidden','false');menuButton.setAttribute('aria-expanded','true');backdrop.hidden=false;document.querySelector('#menu-close').focus();});
+function closeMenu(){if(menu.open)menu.close();menuButton.setAttribute('aria-expanded','false');}
+menuButton.addEventListener('click',()=>{if(!menu.open)menu.showModal();menuButton.setAttribute('aria-expanded','true');document.querySelector('#menu-close').focus();});
 document.querySelector('#menu-close').addEventListener('click',()=>{closeMenu();menuButton.focus();});
-backdrop.addEventListener('click',closeMenu);
-document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenu();});
+menu.addEventListener('close',()=>menuButton.setAttribute('aria-expanded','false'));
+menu.addEventListener('cancel',()=>menuButton.setAttribute('aria-expanded','false'));
+menu.addEventListener('click',event=>{if(event.target===menu)closeMenu();});
 document.querySelectorAll('.menu-link[data-trend]').forEach(link=>link.addEventListener('click',()=>{
   activeTrend=link.dataset.trend;
   document.querySelectorAll('[data-page-panel]').forEach(panel=>panel.hidden=panel.dataset.pagePanel!=='trend');
