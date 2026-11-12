@@ -107,3 +107,6 @@ dialog::backdrop{background:#12282c99}
 .menu-backdrop{position:fixed;z-index:40;inset:0;background:#071426aa}
 body.menu-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){.app-menu{transition:none}}
+
+.app-menu[hidden]{display:none!important}
+.menu-backdrop[hidden]{display:none!important}
