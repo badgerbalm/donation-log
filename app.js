@@ -16,6 +16,9 @@ const cancel = document.querySelector('#cancel');
 const heading = document.querySelector('#form-title');
 let editing = null;
 let creatingNew = false;
+let entryPhase = 'details';
+let activeVisitId = null;
+let scanWasRead = false;
 let records = [];
 let canWrite = true;
 let medicationEvents = [];
@@ -252,38 +255,138 @@ async function loadSharedRecords(data) {
   }
 }
 
+function makeVisitId() {
+  return 'donation-log-' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2));
+}
+function activeRow() {
+  return editing ? records.find(row => visitKey(row) === editing) : null;
+}
+function setPhase(phase) {
+  entryPhase = phase;
+  renderWorkflow();
+}
+function renderWorkflow() {
+  const type = form.elements.visitType.value;
+  const isCsl = type === 'CSL donation';
+  const meta = document.querySelector('#visit-meta');
+  const cslFields = document.querySelector('#csl-fields');
+  const duration = document.querySelector('#duration-stage');
+  const scan = document.querySelector('#scan-stage');
+  const review = document.querySelector('#scan-review-fields');
+  const notes = document.querySelector('#visit-notes-wrap');
+  const stepper = document.querySelector('#workflow-stepper');
+  const context = document.querySelector('#visit-context');
+  const back = document.querySelector('#phase-back');
+  const saveButton = document.querySelector('#phase-save');
+  const description = document.querySelector('#phase-description');
+  const row = activeRow();
+  const phase = isCsl ? entryPhase : 'other';
+  stepper.hidden = !isCsl;
+  for (const li of stepper.querySelectorAll('[data-step]')) {
+    const num = Number(li.dataset.step);
+    li.classList.toggle('current', isCsl && ((phase === 'details' && num === 1) || (phase === 'duration' && num === 2) || (phase === 'scan' && num === 3)));
+    li.classList.toggle('complete', isCsl && ((phase === 'duration' && num === 1) || (phase === 'scan' && num < 3)));
+  }
+  meta.hidden = isCsl && phase !== 'details';
+  cslFields.hidden = !isCsl || phase !== 'details';
+  duration.hidden = !isCsl || phase !== 'duration';
+  scan.hidden = isCsl ? phase !== 'scan' : false;
+  review.hidden = isCsl ? phase !== 'scan' : !scanWasRead;
+  notes.hidden = isCsl;
+  context.hidden = !isCsl || phase === 'details';
+  if (context.hidden) context.textContent = '';
+  else {
+    const pieces = [];
+    if (row?.hematocrit !== null && row?.hematocrit !== undefined) pieces.push('Hematocrit ' + row.hematocrit + '%');
+    if (row?.protein !== null && row?.protein !== undefined) pieces.push('Protein ' + row.protein.toFixed(1) + ' g/dL');
+    if (phase === 'scan' && row?.duration !== null && row?.duration !== undefined) pieces.push('Duration ' + row.duration + ' min');
+    context.textContent = pieces.join(' · ');
+  }
+  back.hidden = !isCsl || phase === 'details';
+  saveButton.textContent = isCsl
+    ? (phase === 'details' ? 'Save Visit Details' : phase === 'duration' ? 'Save Duration' : 'Save Visit')
+    : 'Save Visit';
+  if (!isCsl) {
+    heading.textContent = type === 'Doctor / clinic' ? 'Doctor Visit' : 'Other Visit';
+    description.textContent = scanWasRead ? 'Review the extracted values, add notes if helpful, then save.' : 'Choose a visit summary screenshot to read its details. You can also enter readings after scanning.';
+  } else if (phase === 'details') {
+    heading.textContent = row ? 'Before Visit' : 'New Visit';
+    description.textContent = 'Enter your visit date and CSL screening values before donation.';
+  } else if (phase === 'duration') {
+    heading.textContent = 'Donation Duration';
+    description.textContent = 'After your donation, enter how long it took.';
+  } else {
+    heading.textContent = 'Scan Visit Summary';
+    description.textContent = 'Choose the CSL Donation Details screenshot. Review all values before saving.';
+  }
+  if (isCsl && phase === 'duration') {
+    document.querySelector('#screening-summary').textContent = [
+      row?.date ? new Date(row.date + 'T12:00:00').toLocaleDateString() : '',
+      row?.arm ? row.arm + ' arm' : '',
+      row?.hematocrit !== null && row?.hematocrit !== undefined ? 'Hematocrit ' + row.hematocrit + '%' : '',
+      row?.protein !== null && row?.protein !== undefined ? 'Protein ' + row.protein.toFixed(1) + ' g/dL' : ''
+    ].filter(Boolean).join(' · ');
+  }
+}
+function renderLastVisitSummary() {
+  const row = [...records].filter(item => item.visitType === 'CSL donation').sort((a,b) => dateTimeKey(b).localeCompare(dateTimeKey(a)))[0];
+  const card = document.querySelector('#last-visit-card');
+  const date = document.querySelector('#last-visit-date');
+  const details = document.querySelector('#last-visit-details');
+  if (!row) {
+    date.textContent = 'No CSL visits saved yet';
+    details.textContent = 'Your latest visit summary will appear here.';
+    return;
+  }
+  date.textContent = new Date(row.date + 'T12:00:00').toLocaleDateString(undefined, {month:'short',day:'numeric',year:'numeric'});
+  details.textContent = [
+    row.hematocrit !== null ? 'Hematocrit ' + row.hematocrit + '%' : '',
+    row.protein !== null ? 'Protein ' + row.protein.toFixed(1) + ' g/dL' : '',
+    row.duration !== null ? 'Duration ' + row.duration + ' min' : ''
+  ].filter(Boolean).join('  ·  ') || 'Visit details not entered yet';
+}
 function resetForm() {
   clearScanSelection();
   form.reset();
   editing = null;
-  heading.textContent = 'New visit';
+  activeVisitId = null;
+  creatingNew = false;
+  scanWasRead = false;
+  entryPhase = 'details';
+  heading.textContent = 'New Visit';
   cancel.hidden = true;
   form.elements.arm.value = defaultArm();
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   form.elements.date.value = now.toISOString().slice(0, 10);
   form.elements.visitType.value = 'CSL donation';
+  form.elements.id.value = '';
+  renderWorkflow();
   renderEntryDashboard();
 }
-
 function startEditing(row) {
   editing = visitKey(row);
+  activeVisitId = row.id || editing;
   creatingNew = false;
+  scanWasRead = Boolean(row.systolic !== null || row.diastolic !== null || row.pulse !== null || row.weight !== null || row.temperature !== null);
   for (const field of columns) if (form.elements[field]) form.elements[field].value = row[field] ?? '';
-  heading.textContent = needsDonationDetails(row) ? 'Complete visit' : 'Edit visit';
+  form.elements.id.value = row.id || '';
+  entryPhase = row.visitType === 'CSL donation' && row.id?.startsWith('donation-log-')
+    ? (row.duration === null ? 'duration' : (row.time || row.systolic === null ? 'scan' : 'details'))
+    : 'details';
+  heading.textContent = needsDonationDetails(row) ? 'Continue CSL Visit' : 'Edit Visit';
   cancel.hidden = false;
-  status.textContent = 'Add the donation time and any readings from the CSL screenshot, then save to update this same visit.';
+  status.textContent = 'Continue this saved visit. Your changes update the same visit record.';
   document.querySelectorAll('[data-page-panel]').forEach(panel => panel.hidden = panel.dataset.pagePanel !== 'entry');
   document.querySelectorAll('.menu-link').forEach(link => link.classList.toggle('active', link.dataset.page === 'entry'));
-  form.elements.time.focus();
+  renderWorkflow();
   renderEntryDashboard();
 }
-
 function needsDonationDetails(row) {
-  return row.visitType === 'CSL donation' && !row.time && row.arm && (row.hematocrit !== null || row.protein !== null) &&
-    row.systolic === null && row.diastolic === null && row.pulse === null && row.weight === null && row.temperature === null;
+  if (row.visitType !== 'CSL donation') return false;
+  const legacyPreDonation = !row.id?.startsWith('donation-log-') && !row.time && row.arm && (row.hematocrit !== null || row.protein !== null) && row.systolic === null && row.diastolic === null && row.pulse === null && row.weight === null && row.temperature === null;
+  return Boolean(legacyPreDonation || (row.id?.startsWith('donation-log-') && (row.duration === null || (row.time === '' && row.systolic === null && row.diastolic === null && row.pulse === null && row.weight === null && row.temperature === null))));
 }
-
 function renderEntryDashboard() {
   const panel = document.querySelector('#pending-visits');
   if (!panel) return;
@@ -293,20 +396,16 @@ function renderEntryDashboard() {
   document.querySelector('#entry-editor').hidden = !editing && !creatingNew;
   const list = document.querySelector('#pending-list');
   list.replaceChildren();
-  if (!todaysVisits.length) {
-    const empty = document.createElement('p');
-    empty.className = 'muted';
-    empty.textContent = 'No visits recorded today.';
-    list.append(empty);
-  }
+  document.querySelector('#today-empty-state').hidden = todaysVisits.length > 0;
   for (const row of todaysVisits) {
     const item = document.createElement('div');
     item.className = 'pending-visit';
     const summary = document.createElement('p');
-    const details = [row.time || 'Time not entered', row.visitType];
+    const details = [row.time || (needsDonationDetails(row) ? 'In progress' : 'Time not entered'), row.visitType];
     if (row.arm) details.push('Arm ' + row.arm);
-    if (row.hematocrit !== null) details.push('Hematocrit ' + row.hematocrit);
-    if (row.protein !== null) details.push('Total protein ' + row.protein + ' g/dL');
+    if (row.hematocrit !== null) details.push('Hematocrit ' + row.hematocrit + '%');
+    if (row.protein !== null) details.push('Protein ' + row.protein.toFixed(1) + ' g/dL');
+    if (row.duration !== null) details.push(row.duration + ' min');
     if (row.systolic !== null && row.diastolic !== null) details.push('BP ' + row.systolic + '/' + row.diastolic);
     if (row.pulse !== null) details.push('Pulse ' + row.pulse);
     if (row.weight !== null) details.push('Weight ' + row.weight + ' lb');
@@ -315,7 +414,7 @@ function renderEntryDashboard() {
     summary.textContent = details.join(' · ');
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = needsDonationDetails(row) ? 'Add additional details' : 'Edit visit';
+    button.textContent = needsDonationDetails(row) ? 'Continue Visit' : 'Edit Visit';
     button.addEventListener('click', () => startEditing(row));
     const remove = document.createElement('button');
     remove.type = 'button';
@@ -329,8 +428,9 @@ function renderEntryDashboard() {
     item.append(summary, actions);
     list.append(item);
   }
+  renderLastVisitSummary();
+  if (editing || creatingNew) renderWorkflow();
 }
-
 function render() {
   history.replaceChildren();
   renderHistoryTable();
@@ -587,54 +687,99 @@ function drawMetricTrend() {
   }
 }
 
+async function persistCurrentVisit({finalize = false} = {}) {
+  const input = Object.fromEntries(new FormData(form));
+  const existing = activeRow();
+  input.id = activeVisitId || existing?.id || makeVisitId();
+  if (existing) input.source = existing.source;
+  const merged = {...(existing || {}), ...input, id: input.id};
+  const row = normalize(merged);
+  const next = records.filter(record => visitKey(record) !== (editing || ''));
+  const conflict = next.find(record => record.date === row.date && record.time === row.time && record.visitType === row.visitType);
+  if (conflict) throw new Error('A visit already uses this date and time. Open that visit to update it.');
+  await save([...next, row]);
+  editing = visitKey(row);
+  activeVisitId = row.id;
+  creatingNew = !finalize;
+  return row;
+}
 form.addEventListener('submit', async event => {
   event.preventDefault();
+  const button = document.querySelector('#phase-save');
+  button.disabled = true;
   try {
-    const input=Object.fromEntries(new FormData(form));
-    if(editing){const original=records.find(record=>visitKey(record)===editing);input.id=original?.id;input.source=original?.source;}
-    const row = normalize(input);
-    const next = records.filter(record => visitKey(record) !== editing);
-    if (next.some(record => visitKey(record) === visitKey(row))) {
-      throw new Error('A visit already uses this date and time. Edit that visit or enter a different time.');
+    const type = form.elements.visitType.value;
+    if (type === 'CSL donation' && entryPhase === 'details') {
+      if (!form.elements.arm.value || !form.elements.hematocrit.value || !form.elements.protein.value) {
+        throw new Error('Enter the arm, hematocrit, and total protein before continuing.');
+      }
+      const row = await persistCurrentVisit();
+      entryPhase = 'duration';
+      cancel.hidden = false;
+      renderWorkflow();
+      form.elements.duration.focus();
+      status.textContent = 'Screening details saved. After your donation, enter the duration.';
+      document.querySelector('#dashboard-status').textContent = '';
+      return;
     }
-    const wasEditing = editing !== null;
-    const isPreDonationScreen = !row.time && row.visitType === 'CSL donation' && row.arm && (row.hematocrit !== null || row.protein !== null) && row.systolic === null && row.diastolic === null && row.pulse === null && row.weight === null && row.temperature === null;
-    await save([...next, row]);
+    if (type === 'CSL donation' && entryPhase === 'duration') {
+      if (!form.elements.duration.value || Number(form.elements.duration.value) < 1) throw new Error('Enter the donation duration in minutes.');
+      const row = await persistCurrentVisit();
+      entryPhase = 'scan';
+      cancel.hidden = false;
+      renderWorkflow();
+      status.textContent = 'Duration saved. Scan the CSL visit screenshot to add the remaining readings.';
+      document.querySelector('#dashboard-status').textContent = '';
+      return;
+    }
+    const row = await persistCurrentVisit({finalize:true});
+    editing = null;
+    activeVisitId = null;
     creatingNew = false;
+    entryPhase = 'details';
+    scanWasRead = false;
     resetForm();
-    const saveMessage = wasEditing ? 'Updated visit for ' + row.date + '.' :
-      (isPreDonationScreen
-        ? 'Pre-donation screening saved. Add additional details here after the donation.'
-        : 'Saved visit for ' + row.date + '.');
-    status.textContent = saveMessage;
-    document.querySelector('#dashboard-status').textContent = document.querySelector('#pending-visits').hidden ? '' : saveMessage;
-  } catch (error) { status.textContent = error.message; }
+    const message = 'Saved visit for ' + row.date + '.';
+    status.textContent = message;
+    document.querySelector('#dashboard-status').textContent = message;
+  } catch (error) {
+    status.textContent = error.message || 'Could not save this visit.';
+  } finally {
+    button.disabled = false;
+  }
 });
-
 cancel.addEventListener('click', () => {
   resetForm();
-  status.textContent = '';
-  form.elements.date.focus();
+  status.textContent = 'Visit entry closed. Any saved progress remains in Today’s Visits.';
 });
-
+document.querySelector('#phase-back').addEventListener('click', () => {
+  if (entryPhase === 'scan') entryPhase = 'duration';
+  else if (entryPhase === 'duration') entryPhase = 'details';
+  renderWorkflow();
+});
 form.elements.visitType.addEventListener('change', () => {
-  if (form.elements.visitType.value === 'CSL donation') {
-    form.elements.arm.value = defaultArm();
-    status.textContent = 'CSL donation selected. Enter the screening values for this visit.';
-    return;
-  }
-  for (const name of ['time', 'systolic', 'diastolic', 'pulse', 'weight', 'temperature', 'hematocrit', 'protein', 'duration', 'arm', 'notes']) {
-    form.elements[name].value = '';
-  }
   clearScanSelection();
-  status.textContent = 'Non-CSL visit selected. Other fields were cleared; the date was kept.';
+  scanWasRead = false;
+  const isCsl = form.elements.visitType.value === 'CSL donation';
+  if (isCsl) {
+    form.elements.arm.value = defaultArm();
+    for (const name of ['time','systolic','diastolic','pulse','weight','temperature','duration','notes']) form.elements[name].value = '';
+    entryPhase = 'details';
+    status.textContent = 'CSL selected. Start with the screening values before donation.';
+  } else {
+    for (const name of ['time','systolic','diastolic','pulse','weight','temperature','hematocrit','protein','duration','arm']) form.elements[name].value = '';
+    entryPhase = 'other';
+    status.textContent = 'Doctor or Other selected. CSL-only fields were cleared; scan a visit summary or enter notes.';
+  }
+  renderWorkflow();
 });
-
 document.querySelector('#add-new-visit').addEventListener('click', () => {
-  creatingNew = true;
   resetForm();
-  document.querySelector('#pending-visits').hidden = true;
-  document.querySelector('#entry-editor').hidden = false;
+  creatingNew = true;
+  activeVisitId = makeVisitId();
+  form.elements.id.value = activeVisitId;
+  cancel.hidden = false;
+  renderEntryDashboard();
   form.elements.date.focus();
 });
 
@@ -1132,6 +1277,8 @@ scanReadButton.addEventListener('click',async()=>{
     const result=await worker.recognize(file);
     const found=parseDonationScreenshot(result.data.text||'');
     const inserted=applyScanFindings(found);
+    scanWasRead=true;
+    renderWorkflow();
     const count=[found.date,found.time,found.systolic!==null&&found.diastolic!==null?true:null,found.pulse,found.weight,found.temperature].filter(value=>value!==null&&value!==undefined).length;
     if(!count)scanStatus.textContent='No labeled readings were recognized. Keep the preview open and enter the values manually.';
     else scanStatus.textContent='Found '+count+' possible item'+(count===1?'':'s')+'; '+inserted+' blank form field'+(inserted===1?' was':'s were')+' filled. Check the screenshot and every form value before saving.';

@@ -8,10 +8,10 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180-v2.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
-<link rel="stylesheet" href="style.css?v=menu-solid-teal-20261112">
+<link rel="stylesheet" href="style.css?v=donation-workflow-20261112-1">
 <script src="menu.js?v=direct-menu-v2-20261112" defer></script>
 <script src="navigation.js?v=direct-menu-v2-20261112" defer></script>
-<script src="app.js?v=startup-order-fix-20261112-2" defer></script>
+<script src="app.js?v=donation-workflow-20261112-1" defer></script>
 </head>
 <body>
 <header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1>Donation Log</h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
@@ -62,41 +62,85 @@
 <div id="period-summary" class="period-summary"></div>
 <div class="actions report-export-actions"><button type="button" class="secondary" id="print-report">Save PDF</button><button type="button" class="secondary" id="save-chart-image">Save Image</button></div><p id="export-status" class="muted" role="status" aria-live="polite"></p>
 </section>
-<section class="card page" data-page-panel="entry" aria-labelledby="form-title">
-<div id="pending-visits" hidden>
-<h2>Today's visits</h2>
-<p id="dashboard-status" role="status" aria-live="polite"></p>
-<div id="pending-list"></div>
-<div class="actions"><button type="button" class="secondary" id="add-new-visit">Add new visit</button></div>
+<section class="page" data-page-panel="entry" aria-label="Donation visits">
+<div id="pending-visits" class="card today-card">
+<div class="today-card-heading"><div><p class="eyebrow">YOUR VISIT LOG</p><h2>Today's Visits</h2></div></div>
+<div id="today-empty-state" class="today-empty-state">
+<svg viewBox="0 0 240 190" role="img" aria-label="Calendar and blood drop illustration">
+<ellipse cx="120" cy="165" rx="90" ry="13" fill="#c9f4ec"/>
+<rect x="48" y="38" width="139" height="119" rx="18" fill="#f3fffc" stroke="#34af9d" stroke-width="8"/>
+<path d="M54 55h127a13 13 0 0 0 13-13V29a16 16 0 0 0-16-16H58a16 16 0 0 0-16 16v13a13 13 0 0 0 12 13Z" fill="#25a995"/>
+<rect x="74" y="2" width="13" height="34" rx="7" fill="#f4fffd" stroke="#159382" stroke-width="5"/>
+<rect x="145" y="2" width="13" height="34" rx="7" fill="#f4fffd" stroke="#159382" stroke-width="5"/>
+<g fill="#bcebe3"><rect x="68" y="72" width="23" height="20" rx="5"/><rect x="103" y="72" width="23" height="20" rx="5"/><rect x="138" y="72" width="23" height="20" rx="5"/><rect x="68" y="105" width="23" height="20" rx="5"/><rect x="103" y="105" width="23" height="20" rx="5"/><rect x="138" y="105" width="23" height="20" rx="5"/></g>
+<path d="M190 73c-10 17-26 33-26 48a26 26 0 0 0 52 0c0-15-16-31-26-48Z" fill="#ff3349" stroke="#fff" stroke-width="6"/>
+<path d="M181 119c0 8 5 13 11 15" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+</svg>
+<p id="today-empty-text" class="muted">No visits recorded today.</p>
 </div>
-<div id="entry-editor">
-<h2 id="form-title">New visit</h2>
-
+<div id="pending-list"></div><p id="dashboard-status" class="muted" role="status" aria-live="polite"></p>
+<div class="actions"><button type="button" id="add-new-visit" class="home-add-button"><span aria-hidden="true">＋</span> Add New Visit</button></div>
+</div>
+<div id="entry-editor" class="card entry-card" hidden>
+<div class="entry-title-row"><div><p class="eyebrow">VISIT DETAILS</p><h2 id="form-title">New Visit</h2></div></div>
+<ol id="workflow-stepper" class="workflow-stepper" aria-label="CSL visit steps" hidden>
+<li data-step="1"><span>1</span><b>Before Visit</b></li>
+<li data-step="2"><span>2</span><b>Duration</b></li>
+<li data-step="3"><span>3</span><b>Scan Summary</b></li>
+</ol>
+<p id="phase-description" class="phase-description muted">Enter the date and screening values from your CSL visit.</p>
 <form id="visit">
-<fieldset class="form-step"><legend>1. Before donation</legend><div class="grid">
-<label>Visit date <input name="date" type="date" required></label>
-<label>Visit type <select name="visitType"><option>CSL donation</option><option>Doctor / clinic</option><option>Home reading</option><option>Other</option></select></label>
-<label>Arm <select name="arm"><option value="">Select arm</option><option>Left</option><option>Right</option><option>Both</option></select></label>
-<label>Hematocrit (%) <select name="hematocrit"><option value="">Select (30–65)</option><option>30</option><option>31</option><option>32</option><option>33</option><option>34</option><option>35</option><option>36</option><option>37</option><option>38</option><option>39</option><option>40</option><option>41</option><option>42</option><option>43</option><option>44</option><option>45</option><option>46</option><option>47</option><option>48</option><option selected>49</option><option>50</option><option>51</option><option>52</option><option>53</option><option>54</option><option>55</option><option>56</option><option>57</option><option>58</option><option>59</option><option>60</option><option>61</option><option>62</option><option>63</option><option>64</option><option>65</option></select></label>
-<label>Total protein (g/dL) <select name="protein"><option value="">Select (5.5–9.5)</option><option value="5.5">5.5</option><option value="5.6">5.6</option><option value="5.7">5.7</option><option value="5.8">5.8</option><option value="5.9">5.9</option><option value="6.0">6.0</option><option value="6.1">6.1</option><option value="6.2">6.2</option><option value="6.3">6.3</option><option value="6.4">6.4</option><option value="6.5">6.5</option><option value="6.6">6.6</option><option value="6.7">6.7</option><option value="6.8">6.8</option><option value="6.9">6.9</option><option value="7.0">7.0</option><option value="7.1">7.1</option><option value="7.2">7.2</option><option value="7.3">7.3</option><option value="7.4">7.4</option><option value="7.5" selected>7.5</option><option value="7.6">7.6</option><option value="7.7">7.7</option><option value="7.8">7.8</option><option value="7.9">7.9</option><option value="8.0">8.0</option><option value="8.1">8.1</option><option value="8.2">8.2</option><option value="8.3">8.3</option><option value="8.4">8.4</option><option value="8.5">8.5</option><option value="8.6">8.6</option><option value="8.7">8.7</option><option value="8.8">8.8</option><option value="8.9">8.9</option><option value="9.0">9.0</option><option value="9.1">9.1</option><option value="9.2">9.2</option><option value="9.3">9.3</option><option value="9.4">9.4</option><option value="9.5">9.5</option></select></label>
-</div></fieldset>
-<fieldset class="form-step"><legend>2. After donation</legend><div class="grid">
-<label>Visit time <input name="time" type="time"></label>
-<label>Systolic (mm Hg) <input name="systolic" type="number" inputmode="numeric" min="1" max="400" step="1"></label>
-<label>Diastolic (mm Hg) <input name="diastolic" type="number" inputmode="numeric" min="1" max="400" step="1"></label>
-<label>Pulse (bpm) <input name="pulse" type="number" inputmode="numeric" min="1" max="400" step="1"></label>
-<label>Weight (lb) <input name="weight" type="number" inputmode="decimal" min="0.01" step="any"></label>
-<label>Temperature (°F) <input name="temperature" type="number" inputmode="decimal" min="1" step="any"></label>
-<label>Duration (min) <input name="duration" type="number" inputmode="decimal" min="0" step="any"></label>
-</div></fieldset>
-<label>Visit notes <textarea name="notes" rows="2" maxlength="2000"></textarea></label>
-<div class="actions"><button type="submit">Save visit</button><button type="button" id="cancel" class="secondary" hidden>Cancel edit</button></div>
+<input type="hidden" name="id">
+<div id="visit-meta" class="visit-meta">
+<label>Visit Date<input name="date" type="date" required></label>
+<label>Visit Type<select name="visitType"><option value="CSL donation">CSL</option><option value="Doctor / clinic">Doctor</option><option value="Other">Other</option></select></label>
+</div>
+<div id="visit-context" class="visit-context" hidden></div>
+<fieldset id="csl-fields" class="form-step">
+<legend>Before Donation</legend>
+<div class="grid">
+<label>Arm<select name="arm"><option value="">Select arm</option><option>Left</option><option>Right</option><option>Both</option></select></label>
+<label>Hematocrit (%)<select name="hematocrit"><option value="">Select (30–65)</option><option>30</option><option>31</option><option>32</option><option>33</option><option>34</option><option>35</option><option>36</option><option>37</option><option>38</option><option>39</option><option>40</option><option>41</option><option>42</option><option>43</option><option>44</option><option>45</option><option>46</option><option>47</option><option>48</option><option>49</option><option>50</option><option>51</option><option>52</option><option>53</option><option>54</option><option>55</option><option>56</option><option>57</option><option>58</option><option>59</option><option>60</option><option>61</option><option>62</option><option>63</option><option>64</option><option>65</option></select></label>
+<label>Total Protein (g/dL)<select name="protein"><option value="">Select (5.5–9.5)</option><option value="5.5">5.5</option><option value="5.6">5.6</option><option value="5.7">5.7</option><option value="5.8">5.8</option><option value="5.9">5.9</option><option value="6.0">6.0</option><option value="6.1">6.1</option><option value="6.2">6.2</option><option value="6.3">6.3</option><option value="6.4">6.4</option><option value="6.5">6.5</option><option value="6.6">6.6</option><option value="6.7">6.7</option><option value="6.8">6.8</option><option value="6.9">6.9</option><option value="7.0">7.0</option><option value="7.1">7.1</option><option value="7.2">7.2</option><option value="7.3">7.3</option><option value="7.4">7.4</option><option value="7.5">7.5</option><option value="7.6">7.6</option><option value="7.7">7.7</option><option value="7.8">7.8</option><option value="7.9">7.9</option><option value="8.0">8.0</option><option value="8.1">8.1</option><option value="8.2">8.2</option><option value="8.3">8.3</option><option value="8.4">8.4</option><option value="8.5">8.5</option><option value="8.6">8.6</option><option value="8.7">8.7</option><option value="8.8">8.8</option><option value="8.9">8.9</option><option value="9.0">9.0</option><option value="9.1">9.1</option><option value="9.2">9.2</option><option value="9.3">9.3</option><option value="9.4">9.4</option><option value="9.5">9.5</option></select></label>
+</div>
+</fieldset>
+<fieldset id="duration-stage" class="form-step" hidden>
+<legend>Donation Duration</legend>
+<p class="muted">Enter the completed donation duration, then save to continue.</p>
+<p id="screening-summary" class="screening-summary"></p>
+<label class="duration-entry">Duration (min)<input name="duration" type="number" min="0" max="180" step="1" inputmode="numeric" placeholder="Enter minutes"></label>
+</fieldset>
+<div id="scan-stage" class="scan-box" hidden>
+<h3 id="scan-stage-title">Scan CSL Confirmation</h3>
+<p id="scan-help" class="muted">Choose a CSL Donation Details screenshot to add the remaining readings.</p>
+<label class="scan-upload"><span class="scan-upload-button">▧ Choose Screenshot</span><span id="scan-file-name" class="scan-file-name">No screenshot selected yet</span><input type="file" id="scan-image" accept="image/*"></label>
+<div class="actions"><button type="button" id="scan-read" disabled>Read Screenshot</button></div>
+<p class="scan-privacy muted">The screenshot is processed on this device. It is not uploaded or saved with your visit. The OCR engine and English model download when you scan.</p>
+<p id="scan-status" role="status" aria-live="polite"></p>
+<img id="scan-preview" alt="Selected visit summary screenshot preview" hidden>
+<section id="scan-results" class="scan-results" aria-live="polite" hidden><h4>Possible Readings · Check Each Field</h4><ul id="scan-findings"></ul></section>
+</div>
+<fieldset id="scan-review-fields" class="form-step" hidden>
+<legend>Review Scanned Readings</legend>
+<div class="grid">
+<label>Visit Time<input name="time" type="time"></label>
+<label>Systolic (mm Hg)<input name="systolic" type="number" inputmode="numeric" min="1" max="400" step="1"></label>
+<label>Diastolic (mm Hg)<input name="diastolic" type="number" inputmode="numeric" min="1" max="400" step="1"></label>
+<label>Pulse (bpm)<input name="pulse" type="number" inputmode="numeric" min="1" max="400" step="1"></label>
+<label>Weight (lb)<input name="weight" type="number" inputmode="decimal" min="0.01" step="any"></label>
+<label>Temperature (°F)<input name="temperature" type="number" inputmode="decimal" min="1" step="any"></label>
+</div>
+</fieldset>
+<label id="visit-notes-wrap" class="visit-notes-wrap" hidden>Visit Notes<textarea name="notes" rows="3" maxlength="2000" placeholder="Add notes about this visit"></textarea></label>
+<div class="actions entry-actions"><button type="button" id="phase-back" class="secondary" hidden>Back</button><button type="submit" id="phase-save">Save Visit Details</button><button type="button" id="cancel" class="secondary" hidden>Finish Later</button></div>
 </form>
 <p id="status" role="status" aria-live="polite"></p>
-<div class="scan-box"><h3>Scan a CSL screenshot</h3><p class="muted">Choose a Donation Details screenshot, read it, then review the detected values in the form before saving.</p><label class="scan-upload"><span class="scan-upload-button">▧ Choose photo or file</span><span id="scan-file-name" class="scan-file-name">No screenshot selected yet</span><input type="file" id="scan-image" accept="image/*"></label><div class="actions"><button type="button" id="scan-read" disabled>Read screenshot</button></div><p class="scan-privacy muted">The screenshot is processed on this device. It is not uploaded or saved with your visit. The OCR engine and English model download when you scan.</p><p id="scan-status" role="status" aria-live="polite"></p><img id="scan-preview" alt="Selected donation screenshot preview" hidden><section id="scan-results" class="scan-results" aria-live="polite" hidden><h4>Possible readings · check each field</h4><ul id="scan-findings"></ul></section></div>
 <div id="connection-help" class="scan-box" hidden><h3>Connect your private data</h3><p>Sign in with your Google account here. Google will return you to Donation Log after confirming your identity. Safari and the Home Screen app may each need their own sign-in.</p><button type="button" class="connect-google">Sign in to Donation Log</button><p class="muted connection-status" role="status" aria-live="polite"></p></div>
-
 </div>
+<article id="last-visit-card" class="card last-visit-card">
+<div class="last-visit-icon" aria-hidden="true">🩸</div>
+<div class="last-visit-copy"><h2>Last Visit</h2><p id="last-visit-date" class="last-visit-date"></p><p id="last-visit-details" class="last-visit-details"></p></div>
+</article>
 </section>
 <section class="card page" data-page-panel="history" aria-labelledby="history-title" hidden>
 <h2 id="history-title">Visit history</h2>

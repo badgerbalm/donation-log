@@ -112,3 +112,66 @@ body.menu-open{overflow:hidden}
 
 .app-menu[hidden]{display:none!important}
 .menu-backdrop[hidden]{display:none!important}
+
+/* Approved colorful Donation Log workflow */
+:root{background:#dff8f3;color:#123b3a}
+body{background:radial-gradient(ellipse at 50% 0%,#b8f3e9 0,#ddfaf4 48%,#eefaf7 100%);min-height:100vh}
+header{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(112deg,#064d49 0%,#007b70 55%,#043e3b 100%);border-radius:0 0 26px 26px;padding:22px 22px 26px}
+header:after{content:"";position:absolute;z-index:-1;left:28%;right:-5%;bottom:16px;height:3px;border-radius:50%;background:linear-gradient(90deg,transparent,#60ffe0,#d2fff7,transparent);transform:rotate(-7deg);box-shadow:0 0 15px #59ffe7}
+header .brand{color:#bbf8ed;letter-spacing:2.4px;font-size:.72rem;font-weight:850;margin:0 0 2px}
+header h1{margin:0;color:#fff;font-size:clamp(2rem,7vw,3rem);line-height:1.14;letter-spacing:-.03em;text-shadow:0 2px 9px #002d2a75}
+header p:last-child{color:#d4f4ef;margin:8px 0 0;max-width:470px}
+main{padding:22px 18px 48px;gap:18px}
+.card,.today-card,.entry-card,.last-visit-card{border:1px solid #d4eee8;border-radius:26px;background:linear-gradient(145deg,#fff 0%,#fbfffe 100%);box-shadow:0 12px 30px #126d5b17;padding:24px}
+.today-card h2,.last-visit-card h2,.entry-card h2{color:#063f3b;letter-spacing:-.02em}
+.eyebrow{margin:0 0 4px;color:#098776;font-size:.75rem;font-weight:850;letter-spacing:1.5px}
+.today-empty-state{text-align:center;padding:12px 12px 0}
+.today-empty-state svg{display:block;width:min(100%,250px);height:auto;margin:0 auto 8px}
+.today-empty-state p{font-size:1.08rem;margin:0 0 8px}
+.home-add-button{width:100%;min-height:58px;border:0;border-radius:999px;background:linear-gradient(100deg,#078875,#006658);color:white;font-size:1.12rem;font-weight:850;box-shadow:0 5px 12px #00726036}
+.home-add-button span{font-size:1.5rem;vertical-align:-2px;margin-right:8px}
+.last-visit-card{display:flex;align-items:center;gap:18px;margin:0 0 18px}
+.last-visit-icon{flex:0 0 72px;width:72px;height:72px;display:grid;place-items:center;border-radius:20px;background:#d5f7ef;font-size:2.2rem}
+.last-visit-copy{min-width:0;border-left:3px solid #b5ebe0;padding-left:18px}
+.last-visit-copy h2{margin:0;font-size:1.5rem}
+.last-visit-date{margin:0;color:#123b3a;font-size:1.08rem;font-weight:650}
+.last-visit-details{margin:8px 0 0;color:#12544d;font-weight:700;overflow-wrap:anywhere}
+.entry-title-row{margin-bottom:8px}
+.workflow-stepper{display:grid;grid-template-columns:repeat(3,1fr);list-style:none;padding:0;margin:0 0 18px;gap:8px}
+.workflow-stepper li{position:relative;display:grid;justify-items:center;gap:5px;text-align:center;color:#55716e;font-size:.84rem}
+.workflow-stepper li span{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#d1e6e2;color:#245a55;font-weight:850}
+.workflow-stepper li.current{color:#07584f}
+.workflow-stepper li.current span,.workflow-stepper li.complete span{background:linear-gradient(135deg,#12a88f,#00685e);color:white}
+.workflow-stepper li b{font-weight:750}
+.phase-description{margin:0 0 16px}
+.visit-meta,.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.visit-meta{margin:14px 0}
+#visit label{display:grid;gap:6px;color:#124944;font-weight:750}
+#visit input,#visit select,#visit textarea{width:100%;min-height:48px;border:1px solid #a9c7c2;border-radius:12px;background:#fff;color:#123b3a;padding:10px 12px;font:inherit}
+#visit input:focus,#visit select:focus,#visit textarea:focus{outline:3px solid #54cbb36b;border-color:#078875}
+.form-step{border:1px solid #cbe9e3;border-radius:16px;padding:16px;margin:14px 0}
+.form-step legend{padding:0 6px;color:#07584f;font-weight:850}
+.duration-entry{max-width:320px}
+.visit-context,.screening-summary{border-radius:12px;background:#e6f8f4;padding:12px 14px;color:#07584f;font-weight:750;margin:12px 0}
+.scan-box{border:1px dashed #71b9ad;border-radius:16px;background:#effbf8;padding:16px}
+.scan-box h3{color:#07584f;margin:0 0 6px}
+.scan-upload-button{background:linear-gradient(100deg,#078875,#006658);border-radius:12px}
+.scan-box #scan-read{background:linear-gradient(100deg,#078875,#006658);color:white;border:0}
+.scan-privacy{color:#456661}
+.entry-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+button{border-radius:12px}
+body:not(.menu-open) main button:not(.menu-link):not(.menu-button){background:linear-gradient(110deg,#078875,#006658);color:#fff;border:1px solid #007366;font-weight:780}
+body:not(.menu-open) main button.secondary{background:#e5f6f2;color:#07584f;border:1px solid #86c6b9}
+#status{color:#07584f;font-weight:650}
+.pending-visit{padding:14px 0;border-top:1px solid #d7eeea}
+.pending-visit p{margin:0 0 10px}
+@media(max-width:600px){
+ main{padding:16px 14px 38px}
+ .card,.today-card,.entry-card,.last-visit-card{padding:18px;border-radius:22px}
+ .visit-meta,.grid{grid-template-columns:1fr}
+ .last-visit-card{gap:12px}
+ .last-visit-icon{flex-basis:58px;width:58px;height:58px;font-size:1.8rem}
+ .last-visit-copy{padding-left:12px}
+ .last-visit-details{font-size:.92rem}
+ .workflow-stepper li{font-size:.75rem}
+}
