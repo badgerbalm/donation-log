@@ -1688,6 +1688,34 @@ document.querySelector('#paste-scan-image').addEventListener('click',async event
   }finally{button.disabled=false;}
 });
 
+async function prepareScanImage(file){
+  try{
+    const url=URL.createObjectURL(file);
+    try{
+      const image=new Image();
+      await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url;});
+      const width=image.naturalWidth||image.width,height=image.naturalHeight||image.height;
+      if(!width||!height)return file;
+      const scale=Math.min(2.5,Math.max(1,1800/width),Math.sqrt(8000000/(width*height)));
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.round(width*scale);canvas.height=Math.round(height*scale);
+      const context=canvas.getContext('2d');if(!context)return file;
+      context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);
+      context.filter='contrast(1.15)';context.drawImage(image,0,0,canvas.width,canvas.height);
+      return await new Promise(resolve=>canvas.toBlob(blob=>resolve(blob||file),'image/png'));
+    }finally{URL.revokeObjectURL(url);}
+  }catch{return file;}
+}
+function scanFieldCount(found){
+  return [found.date,found.time,found.systolic,found.diastolic,found.pulse,found.weight,found.temperature]
+    .filter(value=>value!==null&&value!==undefined&&value!=='').length;
+}
+function mergeScanFindings(primary,secondary){
+  const merged={...primary};
+  for(const field of ['date','time','systolic','diastolic','pulse','weight','temperature'])
+    if(merged[field]===null||merged[field]===undefined||merged[field]==='')merged[field]=secondary[field];
+  return merged;
+}
 function loadTesseract(){
   if(window.Tesseract)return Promise.resolve(window.Tesseract);
   if(!tesseractScriptPromise){
@@ -1731,7 +1759,8 @@ function parseDonationScreenshot(text){
     const numericDate=normalized.match(/\b(\d{1,2})[/-](\d{1,2})[/-](20\d{2})\b/);
     if(numericDate&&Number(numericDate[1])<=12&&Number(numericDate[2])<=31)date=numericDate[3]+'-'+String(Number(numericDate[1])).padStart(2,'0')+'-'+String(Number(numericDate[2])).padStart(2,'0');
   }
-  const rawTime=normalized.match(/\b(\d{1,2}):(\d{2})\s*(AM|PM)\b/i);
+  const timeMatches=[...normalized.matchAll(/\b(\d{1,2}):(\d{2})\s*(AM|PM)\b/gi)];
+  const rawTime=timeMatches.at(-1);
   let time='';
   if(rawTime){
     let hour=Number(rawTime[1])%12;
@@ -1743,12 +1772,14 @@ function parseDonationScreenshot(text){
   const pulse=parseMetric(/Pulse\s*Rate\b/i,[/Weight\b/i,/Blood\s*Pressure\b/i,/Temperature\b/i],/(\d{2,3})\s*(?:beats?\s*\/\s*min|bpm)\b/i);
   const temperature=parseMetric(/Temperature\b/i,[/Weight\b/i,/Blood\s*Pressure\b/i,/Pulse\s*Rate\b/i],/(\d{2,3}(?:[.,]\d)?)\s*(?:°\s*)?F\b/i);
   const genericBp=normalized.match(/\b(?:blood\s*pressure|BP)\b[^\d]{0,24}(\d{2,3})\s*[/:]\s*(\d{2,3})/i);
+  const unitBp=normalized.match(/\b(\d{2,3})\s*\/\s*(\d{2,3})\s*mm\s*Hg\b/i);
   const genericPulse=normalized.match(/\b(?:pulse(?:\s*rate)?|heart\s*rate)\b[^\d]{0,24}(\d{2,3})/i);
   const genericWeight=normalized.match(/\bweight\b[^\d]{0,18}(\d{2,3}(?:[.,]\d)?)\s*(?:lbs?|pounds?)?/i);
+  const unitWeight=normalized.match(/\b(\d{2,3}(?:[.,]\d)?)\s*(?:lbs?|pounds?)\b/i);
   const genericTemperature=normalized.match(/\btemperature\b[^\d]{0,18}(\d{2,3}(?:[.,]\d)?)\s*(?:°\s*)?(?:F|fahrenheit)\b/i);
-  const bpValues=bp||genericBp?.slice(1)||null;
+  const bpValues=bp||genericBp?.slice(1)||unitBp?.slice(1)||null;
   const pulseValue=pulse||genericPulse?.slice(1)||null;
-  const weightValue=weight||genericWeight?.slice(1)||null;
+  const weightValue=weight||genericWeight?.slice(1)||unitWeight?.slice(1)||null;
   const temperatureValue=temperature||genericTemperature?.slice(1)||null;
   const number=(value,min,max,decimals=false)=>{
     if(!value)return null;
@@ -1758,15 +1789,7 @@ function parseDonationScreenshot(text){
   let systolic=number(bpValues?.[0],60,300);
   let diastolic=number(bpValues?.[1],30,200);
   if(systolic!==null&&diastolic!==null&&systolic<=diastolic){systolic=null;diastolic=null;}
-  return {
-    date:date||null,
-    time:time||null,
-    systolic,
-    diastolic,
-    pulse:number(pulseValue,25,220),
-    weight:number(weightValue,50,500,true),
-    temperature:number(temperatureValue,80,110,true)
-  };
+  return {date:date||null,time:time||null,systolic,diastolic,pulse:number(pulseValue,25,220),weight:number(weightValue,50,500,true),temperature:number(temperatureValue,80,110,true)};
 }
 
 function formatScanValue(name,value){
@@ -1857,8 +1880,18 @@ scanReadButton.addEventListener('click',async()=>{
         else if(progress.status==='recognizing text')scanStatus.textContent='Reading screenshot… '+Math.round((progress.progress||0)*100)+'%';
       }
     });
-    const result=await worker.recognize(file);
-    const found=parseDonationScreenshot(result.data.text||'');
+    const ocrFile=await prepareScanImage(file);
+    await worker.setParameters({tessedit_pageseg_mode:'11'});
+    const firstPass=await worker.recognize(ocrFile);
+    let found=parseDonationScreenshot(firstPass.data.text||'');
+    let confidence=firstPass.data.confidence||0;
+    if(scanFieldCount(found)<7){
+      scanStatus.textContent='Checking screenshot layout for missed readings…';
+      await worker.setParameters({tessedit_pageseg_mode:'6'});
+      const secondPass=await worker.recognize(ocrFile);
+      found=mergeScanFindings(found,parseDonationScreenshot(secondPass.data.text||''));
+      confidence=Math.max(confidence,secondPass.data.confidence||0);
+    }
     const inserted=applyScanFindings(found);
     scanWasRead=true;
     saveLocalCslDraft('scan');
@@ -1866,7 +1899,7 @@ scanReadButton.addEventListener('click',async()=>{
     const count=[found.date,found.time,found.systolic!==null&&found.diastolic!==null?true:null,found.pulse,found.weight,found.temperature].filter(value=>value!==null&&value!==undefined).length;
     if(!count)scanStatus.textContent='No labeled readings were recognized. Keep the preview open and enter the values manually.';
     else scanStatus.textContent='Found '+count+' possible item'+(count===1?'':'s')+'; '+inserted+' blank form field'+(inserted===1?' was':'s were')+' filled. Check the screenshot and every form value before saving.';
-    if(result.data.confidence<65&&count)scanStatus.textContent+=' OCR confidence was low, so review especially carefully.';
+    if(confidence<65&&count)scanStatus.textContent+=' OCR confidence was low, so review especially carefully.';
   }catch(error){
     scanStatus.textContent=error?.message||'Could not read this screenshot. You can still use the preview and enter values manually.';
   }finally{
