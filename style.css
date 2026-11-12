@@ -1,10 +1,11 @@
 *{box-sizing:border-box}
 :root{font:16px/1.5 system-ui,sans-serif;color:#17252b;background:#edf3f2}
 body{margin:0}
-header{background:#142d33;color:#f6fffd;padding:20px}
-header>div,main{max-width:920px;margin:auto}
-.header-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
-.menu-button{background:#f6fffd;color:#142d33}
+header{display:block;width:100%;background:#142d33;color:#f6fffd;padding:20px}
+header>div,main{width:100%;max-width:920px;margin:0 auto}
+.header-row{display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:0}
+.header-row>div{min-width:0;flex:1}
+.menu-button{flex:0 0 auto;white-space:nowrap;min-width:88px;background:#f6fffd;color:#142d33}
 dialog#app-menu{box-sizing:border-box;position:fixed;inset:0 0 0 auto;width:min(92vw,440px);height:100dvh;max-height:100dvh;margin:0;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(14px + env(safe-area-inset-bottom,0px));border:0;border-left:4px solid #58c5a5;border-radius:0;background:linear-gradient(180deg,#0b2529,#142d33 55%,#0c2024);color:#f6fffd;overflow:auto;overscroll-behavior:contain;box-shadow:-16px 0 48px #07142655}
 dialog#app-menu[open]{display:flex;flex-direction:column;gap:10px;animation:donation-menu-enter .18s ease-out}
 dialog#app-menu::backdrop{background:#071426aa}
@@ -79,5 +80,6 @@ dialog{border:1px solid #a5bbb6;border-radius:14px;max-width:min(92vw,420px);col
 dialog::backdrop{background:#12282c99}
 @media print{body{background:white}header{padding:12px 20px;background:white;color:#142d33}header p{color:#142d33}dialog#app-menu,header .menu-button{display:none}main{display:block;margin:0 auto}.card{border:0;padding:10px;break-inside:avoid}.card:not(.report){display:none}.actions{display:none}.report{display:block}.muted{color:#333}}
 [hidden]{display:none!important}
+@media(max-width:480px){header{padding:16px 14px}.header-row{gap:10px}.header-row h1{font-size:clamp(1.9rem,8vw,2.6rem)}.header-row .menu-button{min-width:82px;padding:8px 10px}header>div,main{width:100%}}
 @media(min-width:760px){main{grid-template-columns:1fr 1fr;align-items:start}}
 
