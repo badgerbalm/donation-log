@@ -1625,6 +1625,11 @@ const scanResults=document.querySelector('#scan-results');
 const scanFindings=document.querySelector('#scan-findings');
 const scanOcrDetails=document.querySelector('#scan-ocr-debug');
 const scanOcrText=document.querySelector('#scan-ocr-text');
+const scanOcrCopyButton=document.querySelector('#copy-scan-ocr');
+const scanOcrCopyStatus=document.querySelector('#scan-ocr-copy-status');
+const scanResultsNode=document.querySelector('#scan-results');
+const strayScanText=scanResultsNode?.nextSibling;
+if(strayScanText?.nodeType===Node.TEXT_NODE&&strayScanText.textContent.trim()==='\\n')strayScanText.remove();
 let scanPreviewUrl='';
 let tesseractScriptPromise=null;
 
@@ -1774,7 +1779,7 @@ function parseDonationScreenshot(text){
     const match=valuePattern.exec(section);
     return match?match.slice(1):null;
   };
-  const dateMatch=normalized.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(20\d{2})\b/i);
+  const dateMatch=normalized.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})[,.]?\s*(20\d{2})\b/i);
   let date='';
   if(dateMatch){
     const month=['january','february','march','april','may','june','july','august','september','october','november','december'].indexOf(dateMatch[1].toLowerCase());
@@ -1783,7 +1788,7 @@ function parseDonationScreenshot(text){
     const numericDate=normalized.match(/\b(\d{1,2})[/-](\d{1,2})[/-](20\d{2})\b/);
     if(numericDate&&Number(numericDate[1])<=12&&Number(numericDate[2])<=31)date=numericDate[3]+'-'+String(Number(numericDate[1])).padStart(2,'0')+'-'+String(Number(numericDate[2])).padStart(2,'0');
   }
-  const timeMatches=[...normalized.matchAll(/\b(\d{1,2}):(\d{2})\s*(AM|PM)\b/gi)];
+  const timeMatches=[...normalized.matchAll(/\b(\d{1,2})\s*[:.]?\s*(\d{2})\s*(AM|PM)\b/gi)];
   const rawTime=timeMatches.at(-1);
   let time='';
   if(rawTime){
@@ -1885,6 +1890,14 @@ function applyScanFindings(found){
   return inserted;
 }
 
+scanOcrCopyButton?.addEventListener('click',async()=>{
+  try{
+    await navigator.clipboard.writeText(scanOcrText.textContent||'');
+    scanOcrCopyStatus.textContent='Copied. Paste the detected text into your message.';
+  }catch{
+    scanOcrCopyStatus.textContent='Automatic copy was blocked. Press and hold the text to select and copy it.';
+  }
+});
 scanReadButton.addEventListener('click',async()=>{
   const file=scanSelectedFile;
   if(!file)return;
