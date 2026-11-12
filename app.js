@@ -853,7 +853,7 @@ async function createReportPdf(){
     '2 0 obj'+NL+'<< /Type /Pages /Kids [3 0 R] /Count 1 >>'+NL+'endobj'+NL,
     '3 0 obj'+NL+'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>'+NL+'endobj'+NL,
     null,
-    '5 0 obj'+NL+'<< /Length 36 >>'+NL+'stream'+NL+'q 595 0 0 842 0 0 cm /Im0 Do Q'+NL+'endstream'+NL+'endobj'+NL
+    '5 0 obj'+NL+'<< /Length 30 >>'+NL+'stream'+NL+'q 595 0 0 842 0 0 cm /Im0 Do Q'+NL+'endstream'+NL+'endobj'+NL
   ];
   for(let i=0;i<objects.length;i++){offsets.push(size);if(i===3){push('4 0 obj'+NL+'<< /Type /XObject /Subtype /Image /Width '+canvas.width+' /Height '+canvas.height+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>'+NL+'stream'+NL);push(jpg);push(NL+'endstream'+NL+'endobj'+NL);}else push(objects[i]);}
   const xref=size;push('xref'+NL+'0 6'+NL+'0000000000 65535 f '+NL);for(let i=1;i<=5;i++)push(String(offsets[i]).padStart(10,'0')+' 00000 n '+NL);push('trailer'+NL+'<< /Size 6 /Root 1 0 R >>'+NL+'startxref'+NL+xref+NL+'%%EOF');
