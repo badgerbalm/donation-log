@@ -19,9 +19,30 @@
 <button type="button" data-page="entry" class="menu-link active">Enter a visit</button>
 <button type="button" data-page="report" class="menu-link">Blood pressure report</button>
 <button type="button" data-page="history" class="menu-link">Visit history</button>
+<details class="menu-trends"><summary>Trends</summary><div class="menu-trend-links">
+<button type="button" class="menu-link" data-trend="bp">Blood pressure</button>
+<button type="button" class="menu-link" data-trend="weight">Weight</button>
+<button type="button" class="menu-link" data-trend="hematocrit">Hematocrit</button>
+<button type="button" class="menu-link" data-trend="protein">Total protein</button>
+<button type="button" class="menu-link" data-trend="temperature">Temperature</button>
+</div></details>
 <button type="button" id="refresh-app" class="menu-link">Refresh app</button>
 </nav>
 <main>
+<section class="card page" data-page-panel="trend" aria-labelledby="trend-title" hidden>
+<h2 id="trend-title">Blood pressure trend</h2>
+<p id="trend-description" class="muted">Recorded measurements over time. Blood pressure values are screening readings and may not be resting readings.</p>
+<label class="trend-range-label">Date range
+<select id="trend-range">
+<option value="all">All available history</option>
+<option value="5y">Last 5 years</option>
+<option value="1y">Last 1 year</option>
+</select>
+</label>
+<p id="trend-summary" class="trend-summary"></p>
+<p id="trend-empty" class="muted" hidden></p>
+<div id="trend-chart-wrap" class="chart-wrap"><svg id="metric-trend-chart" role="img" aria-label="Selected measurement trend"></svg></div>
+</section>
 <section class="card report page" data-page-panel="report" aria-labelledby="report-title" hidden>
 <h2 id="report-title">Blood pressure report</h2>
 <p class="muted">CSL donation screening readings. Medication dates are shown for context.</p>
