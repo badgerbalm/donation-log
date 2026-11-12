@@ -81,5 +81,7 @@ dialog::backdrop{background:#12282c99}
 @media print{body{background:white}header{padding:12px 20px;background:white;color:#142d33}header p{color:#142d33}dialog#app-menu,header .menu-button{display:none}main{display:block;margin:0 auto}.card{border:0;padding:10px;break-inside:avoid}.card:not(.report){display:none}.actions{display:none}.report{display:block}.muted{color:#333}}
 [hidden]{display:none!important}
 @media(max-width:480px){header{padding:16px 14px}.header-row{gap:10px}.header-row h1{font-size:clamp(1.9rem,8vw,2.6rem)}.header-row .menu-button{min-width:82px;padding:8px 10px}header>div,main{width:100%}}
+@media(max-width:600px){header{width:100vw;min-width:100%;padding-inline:max(14px,env(safe-area-inset-left,0px))}.header-row{width:100%;flex-wrap:nowrap}.header-row>div{flex:1 1 auto;min-width:0}.header-row .menu-button{flex:0 0 auto;white-space:nowrap}.header-row h1{overflow-wrap:normal;word-break:normal}main{width:100%;min-width:0}}
+@media(orientation:portrait) and (max-width:760px){header>div{max-width:none}}
 @media(min-width:760px){main{grid-template-columns:1fr 1fr;align-items:start}}
 
