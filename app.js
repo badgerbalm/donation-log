@@ -1,6 +1,7 @@
 'use strict';
 
 const storageKey = 'csl-donation-visits-v1';
+try { localStorage.removeItem(storageKey); } catch {}
 const apiBase = 'https://donation-log-api.onlinesny.workers.dev/api';
 const donationSessionKey = 'donation-log-google-session-v1';
 const pendingAuthKey = 'donation-log-google-pending-v1';
@@ -227,7 +228,7 @@ async function loadSharedRecords(data) {
     const imported=cleaned[index];
     const mergeFields=[...fields,'arm'];
     const hasValue=value=>value!==null&&value!==undefined&&value!=='';
-    const conflicts=mergeFields.some(field=>hasValue(imported[field])&&hasValue(manual[field])&&String(imported[field])!==String(manual[field]));
+    const conflicts=mergeFields.some(field=>hasValue(imported[field])&&hasValue(manual[field])&&String(imported[field])!==String(manual[field]))||Boolean(imported.notes&&manual.notes&&imported.notes!==manual.notes&&(imported.notes+' | '+manual.notes).length>2000);
     if(conflicts){retainedConflicts++;continue;}
     const merged={...imported};
     for(const field of mergeFields)if(!hasValue(merged[field])&&hasValue(manual[field]))merged[field]=manual[field];
