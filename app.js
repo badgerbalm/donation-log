@@ -22,6 +22,7 @@ let medicationEvents = [];
 let visitsLoadState = 'loading';
 let visitsLoadError = '';
 let activeTrend = 'bp';
+window.addEventListener('donation-log:trend-selected',event=>{activeTrend=event.detail?.trend||'bp';drawMetricTrend();});
 let bpChartRange = 'all';
 
 function savedSession() {
@@ -916,20 +917,8 @@ document.querySelector('#save-chart-image').addEventListener('click',async()=>{
     image.src=url;
   }catch{status.textContent='Could not create the image. Please try again.';}
 });
-document.querySelectorAll('.menu-link[data-trend]').forEach(link=>link.addEventListener('click',()=>{
-  activeTrend=link.dataset.trend;
-  document.querySelectorAll('[data-page-panel]').forEach(panel=>panel.hidden=panel.dataset.pagePanel!=='trend');
-  document.querySelectorAll('.menu-link').forEach(item=>item.classList.toggle('active',item===link));
-  document.querySelector('.menu-trends').open=false;
-  drawMetricTrend();
-}));
 document.querySelector('#trend-range').addEventListener('change',drawMetricTrend);
 document.querySelector('#bp-chart-range').addEventListener('change',event=>{bpChartRange=event.target.value;drawReport();});
-document.querySelectorAll('.menu-link[data-page]').forEach(link=>link.addEventListener('click',()=>{
-  const selected=link.dataset.page;
-  document.querySelectorAll('[data-page-panel]').forEach(panel=>panel.hidden=panel.dataset.pagePanel!==selected);
-  document.querySelectorAll('.menu-link').forEach(item=>item.classList.toggle('active',item===link));
-}));
 const chartToggle=document.querySelector('#toggle-bp-chart');
 chartToggle.addEventListener('click',()=>{
   const panel=document.querySelector('#bp-chart-panel');
