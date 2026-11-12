@@ -71,8 +71,7 @@ async function restoreDonationSignIn() {
   if (params.has('donation_auth') || params.has('donation_auth_error')) {
     let pending;
     try { pending = JSON.parse(sessionStorage.getItem(pendingAuthKey) || 'null'); } catch {}
-    if (typeof window.history?.replaceState === 'function') window.history.replaceState(null, '', location.pathname + location.search);
-    else location.hash = '';
+    location.hash = '';
     if (!pending || pending.state !== params.get('donation_state') || Date.now() - pending.created > 900000) {
       sessionStorage.removeItem(pendingAuthKey);
       throw new Error('Google returned to a different browser context. Tap Sign in to Donation Log and try again.');
