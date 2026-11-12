@@ -848,16 +848,16 @@ async function createReportPdf(){
   const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.94));if(!jpeg)throw new Error('PDF image creation failed');
   const jpg=new Uint8Array(await jpeg.arrayBuffer());const enc=new TextEncoder();const parts=[];let size=0;const offsets=[0];
   const push=chunk=>{const bytes=typeof chunk==='string'?enc.encode(chunk):chunk;parts.push(bytes);size+=bytes.length;};
-  push('%PDF-1.4\\n%âãÏÓ\\n');
+  push('%PDF-1.4\n%âãÏÓ\n');
   const objects=[
-    '1 0 obj\\n<< /Type /Catalog /Pages 2 0 R >>\\nendobj\\n',
-    '2 0 obj\\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\\nendobj\\n',
-    '3 0 obj\\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\\nendobj\\n',
+    '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+    '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+    '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n',
     null,
-    '5 0 obj\\n<< /Length 36 >>\\nstream\\nq 595 0 0 842 0 0 cm /Im0 Do Q\\nendstream\\nendobj\\n'
+    '5 0 obj\n<< /Length 36 >>\nstream\nq 595 0 0 842 0 0 cm /Im0 Do Q\nendstream\nendobj\n'
   ];
-  for(let i=0;i<objects.length;i++){offsets.push(size);if(i===3){push('4 0 obj\\n<< /Type /XObject /Subtype /Image /Width '+canvas.width+' /Height '+canvas.height+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\\nstream\\n');push(jpg);push('\\nendstream\\nendobj\\n');}else push(objects[i]);}
-  const xref=size;push('xref\\n0 6\\n0000000000 65535 f \\n');for(let i=1;i<=5;i++)push(String(offsets[i]).padStart(10,'0')+' 00000 n \\n');push('trailer\\n<< /Size 6 /Root 1 0 R >>\\nstartxref\\n'+xref+'\\n%%EOF');
+  for(let i=0;i<objects.length;i++){offsets.push(size);if(i===3){push('4 0 obj\n<< /Type /XObject /Subtype /Image /Width '+canvas.width+' /Height '+canvas.height+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n');push(jpg);push('\nendstream\nendobj\n');}else push(objects[i]);}
+  const xref=size;push('xref\n0 6\n0000000000 65535 f \n');for(let i=1;i<=5;i++)push(String(offsets[i]).padStart(10,'0')+' 00000 n \n');push('trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF');
   return new Blob(parts,{type:'application/pdf'});
 }
 document.querySelector('#print-report').addEventListener('click',async()=>{
