@@ -383,7 +383,7 @@ function renderHistoryChart(){
   const svg=document.querySelector('#history-chart');
   svg.replaceChildren();
   svg.setAttribute('viewBox','0 0 760 650');
-  const dated=records.filter(row=>validDate(row.date)).sort((a,b)=>a.date.localeCompare(b.date));
+  const dated=records.filter(row=>validDate(row.date)).sort((a,b)=>(a.date+' '+a.time).localeCompare(b.date+' '+b.time));
   if(!dated.length){
     svg.setAttribute('aria-label','No saved visits yet');
     const empty=document.createElementNS('http://www.w3.org/2000/svg','text');
