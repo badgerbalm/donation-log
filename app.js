@@ -863,6 +863,26 @@ document.querySelector('#print-report').addEventListener('click',async()=>{
   const status=document.querySelector('#export-status');const button=document.querySelector('#print-report');button.disabled=true;status.textContent='Preparing your report PDF…';
   try{const pdf=await createReportPdf();const file=new File([pdf],'blood-pressure-report.pdf',{type:'application/pdf'});if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:'Blood pressure report'});status.textContent='Use the share menu to save the PDF to Files or choose Print.';}else{const url=URL.createObjectURL(pdf);const link=document.createElement('a');link.href=url;link.download=file.name;link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);status.textContent='Report PDF downloaded. Open it to save or print.';}}catch(error){if(error.name!=='AbortError')status.textContent='Could not create the report PDF. Please try again.';}finally{button.disabled=false;}
 });
+document.querySelector('#save-chart-image').addEventListener('click',async()=>{
+  const status=document.querySelector('#export-status');const svg=document.querySelector('#bp-chart');
+  if(!svg.querySelector('polyline')){status.textContent='Load blood pressure readings before saving the chart image.';return;}
+  try{
+    const markup=new XMLSerializer().serializeToString(svg);const url=URL.createObjectURL(new Blob([markup],{type:'image/svg+xml;charset=utf-8'}));
+    const image=new Image();
+    image.onload=async()=>{
+      try{
+        const canvas=document.createElement('canvas');canvas.width=1520;canvas.height=720;const context=canvas.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);
+        const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!png)throw new Error('Image export failed');
+        const file=new File([png],'blood-pressure-trend.png',{type:'image/png'});
+        if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:'Blood pressure trend'});status.textContent='Choose Save Image in the share sheet to add the graph to Photos.';}
+        else{const objectUrl=URL.createObjectURL(png);const link=document.createElement('a');link.href=objectUrl;link.download=file.name;link.click();setTimeout(()=>URL.revokeObjectURL(objectUrl),30000);status.textContent='Chart image downloaded. Open it and use Share → Save Image to add it to Photos.';}
+      }catch(error){if(error.name!=='AbortError')status.textContent='Could not create the image. Please try again.';}
+      finally{URL.revokeObjectURL(url);}
+    };
+    image.onerror=()=>{URL.revokeObjectURL(url);status.textContent='Could not create the image. Please try again.';};
+    image.src=url;
+  }catch{status.textContent='Could not create the image. Please try again.';}
+});
 const menu=document.querySelector('#app-menu');
 const menuButton=document.querySelector('#menu-open');
 function closeMenu(){if(menu.open)menu.close();menuButton.setAttribute('aria-expanded','false');}
