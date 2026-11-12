@@ -282,8 +282,11 @@ function renderWorkflow() {
   const back = document.querySelector('#phase-back');
   const saveButton = document.querySelector('#phase-save');
   const description = document.querySelector('#phase-description');
+  const visitTypeField = document.querySelector('#visit-type-field');
   const row = activeRow();
   const phase = isCsl ? entryPhase : 'other';
+  visitTypeField.hidden = isCsl && phase !== 'intake';
+  form.classList.toggle('before-donation-layout', isCsl && phase === 'details');
   const preCheckin = ['intake', 'qrCapture', 'qrShow'].includes(phase);
   const checkinLabels = ['Start CSL Intake', 'Capture QR', 'Show QR at desk'];
   const donationLabels = ['Before Donation', 'Duration', 'Scan Summary'];
