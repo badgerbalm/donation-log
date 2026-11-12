@@ -19,6 +19,8 @@
 <button type="button" data-page="entry" class="menu-link active">Enter a visit</button>
 <button type="button" data-page="report" class="menu-link">Blood pressure report</button>
 <button type="button" data-page="history" class="menu-link">Visit history</button>
+<button type="button" id="refresh-data" class="menu-link">Refresh all data</button>
+<p id="refresh-status" class="muted" role="status" aria-live="polite">Refresh visits and medication timeline.</p>
 <button type="button" class="menu-link connect-google">Sign in to Donation Log</button>
 <p class="muted connection-status" role="status" aria-live="polite">Sign in here to load your private visit history.</p>
 </nav>
@@ -30,7 +32,6 @@
 <div class="actions"><button type="button" class="secondary" id="toggle-bp-chart" aria-expanded="false" aria-controls="bp-chart-panel">Show BP graph</button></div>
 <p id="report-load-status" class="muted" role="status" aria-live="polite">Loading saved visit readings…</p>
 <div id="report-connection" hidden><button type="button" class="connect-google">Sign in to Donation Log</button><p class="muted connection-status" role="status" aria-live="polite"></p></div>
-<div class="actions"><button type="button" class="secondary" id="refresh-report">Refresh readings</button></div>
 <div id="bp-chart-panel" class="chart-wrap" hidden><svg id="bp-chart" role="img" aria-label="Blood pressure readings over time"></svg></div>
 <div id="period-summary" class="period-summary"></div>
 <div class="actions"><button type="button" class="secondary" id="print-report">Print report / Save PDF</button></div>
@@ -75,7 +76,6 @@
 <div class="history-chart-wrap"><svg id="history-chart" role="img" aria-label="Blood pressure and donation measurements over time"></svg></div>
 <div class="history-legend"><span>Blood pressure</span><span>Weight</span><span>Hematocrit</span><span>Total protein</span></div>
 <div class="actions">
-<button class="secondary" id="visit-refresh" type="button">Refresh</button>
 <button class="secondary" id="csv">Export CSV</button>
 <button class="secondary" id="backup">Export backup</button>
 <button class="secondary" id="import">Import backup</button>
