@@ -21,6 +21,7 @@ let medicationEvents = [];
 let visitsLoadState = 'loading';
 let visitsLoadError = '';
 let activeTrend = 'bp';
+let bpChartRange = 'all';
 
 function savedSession() {
   try {
@@ -774,7 +775,10 @@ function drawReport() {
     item.textContent = new Date(event.date + 'T12:00:00').toLocaleDateString() + ' · ' + event.label;
     medications.append(item);
   }
-  const readings = records.filter(row => row.systolic !== null && row.diastolic !== null).sort((a,b)=>a.date.localeCompare(b.date));
+  const allReadings = records.filter(row => row.systolic !== null && row.diastolic !== null).sort((a,b)=>a.date.localeCompare(b.date));
+  const rangeCutoff = bpChartRange === 'all' ? '' : new Date(Date.now() - ({'3y':1095,'1y':365,'6m':183}[bpChartRange] || 0) * 86400000).toISOString().slice(0,10);
+  const readings = rangeCutoff ? allReadings.filter(row => row.date >= rangeCutoff) : allReadings;
+  const rangeCount=document.querySelector('#bp-chart-count');if(rangeCount)rangeCount.textContent=readings.length+' of '+allReadings.length+' readings';
   const svg = document.querySelector('#bp-chart');
   svg.replaceChildren();
   svg.setAttribute('viewBox','0 0 760 300');
@@ -836,6 +840,7 @@ document.querySelectorAll('.menu-link[data-trend]').forEach(link=>link.addEventL
   drawMetricTrend();
 }));
 document.querySelector('#trend-range').addEventListener('change',drawMetricTrend);
+document.querySelector('#bp-chart-range').addEventListener('change',event=>{bpChartRange=event.target.value;drawReport();});
 document.querySelectorAll('.menu-link[data-page]').forEach(link=>link.addEventListener('click',()=>{
   const selected=link.dataset.page;
   document.querySelectorAll('[data-page-panel]').forEach(panel=>panel.hidden=panel.dataset.pagePanel!==selected);
