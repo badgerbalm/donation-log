@@ -751,8 +751,6 @@ async function refreshVisits(showHistoryStatus=true) {
   }
   drawReport();
 }
-resetForm();
-render();
 document.querySelectorAll('.connect-google').forEach(button => button.addEventListener('click', startDonationSignIn));
 (async function initializeDonationLog() {
   try {
@@ -1147,4 +1145,6 @@ scanReadButton.addEventListener('click',async()=>{
 });
 window.addEventListener('pagehide',()=>{if(scanPreviewUrl)URL.revokeObjectURL(scanPreviewUrl);});
 
-
+// Initialize only after all DOM references, including the screenshot scanner, are ready.
+resetForm();
+render();
