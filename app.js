@@ -1626,9 +1626,11 @@ const scanFindings=document.querySelector('#scan-findings');
 let scanPreviewUrl='';
 let tesseractScriptPromise=null;
 
+let scanSelectedFile=null;
 function clearScanSelection(){
   if(scanPreviewUrl)URL.revokeObjectURL(scanPreviewUrl);
   scanPreviewUrl='';
+  scanSelectedFile=null;
   scanPreview.removeAttribute('src');
   scanPreview.hidden=true;
   scanImage.value='';
@@ -1638,21 +1640,20 @@ function clearScanSelection(){
   scanResults.hidden=true;
   scanFindings.replaceChildren();
 }
-
-scanImage.addEventListener('change',()=>{
-  const file=scanImage.files?.[0];
-  if(!file)return;
+function acceptScanImage(file){
+  if(!file)return false;
   if(!file.type.startsWith('image/')){
     clearScanSelection();
     scanStatus.textContent='Choose an image file such as a CSL screenshot.';
-    return;
+    return false;
   }
   if(file.size>20*1024*1024){
     clearScanSelection();
     scanStatus.textContent='This image is over 20 MB. Choose a smaller screenshot.';
-    return;
+    return false;
   }
   if(scanPreviewUrl)URL.revokeObjectURL(scanPreviewUrl);
+  scanSelectedFile=file;
   scanPreviewUrl=URL.createObjectURL(file);
   scanPreview.src=scanPreviewUrl;
   scanPreview.hidden=false;
@@ -1661,6 +1662,30 @@ scanImage.addEventListener('change',()=>{
   scanResults.hidden=true;
   scanFindings.replaceChildren();
   scanStatus.textContent='Screenshot ready. Tap “Read screenshot” to extract possible readings.';
+  return true;
+}
+document.querySelector('#choose-scan-image').addEventListener('click',()=>scanImage.click());
+scanImage.addEventListener('change',()=>acceptScanImage(scanImage.files?.[0]));
+document.querySelector('#paste-scan-image').addEventListener('click',async event=>{
+  const button=event.currentTarget;
+  button.disabled=true;
+  scanStatus.textContent='Checking clipboard for an image…';
+  try{
+    if(!navigator.clipboard?.read)throw new Error('Image paste is not supported in this browser. Use Photo library or Choose file instead.');
+    const items=await navigator.clipboard.read();
+    for(const item of items){
+      const imageType=item.types.find(type=>type.startsWith('image/'));
+      if(!imageType)continue;
+      const blob=await item.getType(imageType);
+      const extension=imageType.split('/')[1]?.replace('jpeg','jpg')||'png';
+      if(acceptScanImage(new File([blob],'csl-visit-summary.'+extension,{type:imageType})))return;
+    }
+    scanStatus.textContent='No image was found on the clipboard. Copy a screenshot of your CSL visit summary, then try again.';
+  }catch(error){
+    scanStatus.textContent=error?.name==='NotAllowedError'
+      ? 'Clipboard access was denied. Allow paste when your browser asks, then try again. You can also choose the image from Photo Library or Files.'
+      : (error?.message||'Could not read an image from the clipboard. Choose the screenshot instead.');
+  }finally{button.disabled=false;}
 });
 
 function loadTesseract(){
@@ -1814,7 +1839,7 @@ function applyScanFindings(found){
 }
 
 scanReadButton.addEventListener('click',async()=>{
-  const file=scanImage.files?.[0];
+  const file=scanSelectedFile;
   if(!file)return;
   scanReadButton.disabled=true;
   scanStatus.textContent='Loading the on-device OCR engine…';
