@@ -8,10 +8,10 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180-v2.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
-<link rel="stylesheet" href="style.css?v=donation-workflow-20261112-4">
+<link rel="stylesheet" href="style.css?v=donation-workflow-20261112-6">
 <script src="menu.js?v=direct-menu-v2-20261112" defer></script>
 <script src="navigation.js?v=direct-menu-v2-20261112" defer></script>
-<script src="app.js?v=donation-workflow-20261112-5" defer></script>
+<script src="app.js?v=donation-workflow-20261112-7" defer></script>
 </head>
 <body>
 <header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1>Donation Log</h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
@@ -64,6 +64,12 @@
 </section>
 <section class="page" data-page-panel="entry" aria-label="Donation visits">
 <div id="pending-visits" class="card today-card">
+<div id="home-qr-card" class="home-qr-card" hidden>
+<p class="eyebrow">CSL CHECK-IN</p><h2>Show QR at the desk</h2>
+<p>Show this code at the front desk so CSL can scan your check-in.</p>
+<img id="qr-display" class="qr-preview qr-display" alt="CSL check-in QR code to show at the front desk">
+<button type="button" id="qr-checked-in">I’ve checked in · Next</button>
+</div>
 <div class="today-card-heading"><div><p class="eyebrow">YOUR VISIT LOG</p><h2>Today's Visits</h2></div></div>
 <div id="today-empty-state" class="today-empty-state">
 <svg viewBox="0 0 240 190" role="img" aria-label="Calendar and blood drop illustration">
@@ -84,7 +90,7 @@
 <div id="entry-editor" class="card entry-card" hidden>
 <div class="entry-title-row"><div><p class="eyebrow">VISIT DETAILS</p><h2 id="form-title">New Visit</h2></div></div>
 <ol id="workflow-stepper" class="workflow-stepper" aria-label="CSL visit steps" hidden>
-<li data-step="1"><span>1</span><b>Before Visit</b></li>
+<li data-step="1"><span>1</span><b>Before Donation</b></li>
 <li data-step="2"><span>2</span><b>Duration</b></li>
 <li data-step="3"><span>3</span><b>Scan Summary</b></li>
 </ol>
@@ -96,6 +102,21 @@
 <label>Visit Type<select name="visitType"><option value="CSL donation">CSL</option><option value="Doctor / clinic">Doctor</option><option value="Other">Other</option></select></label>
 </div>
 <div id="visit-context" class="visit-context" hidden></div>
+<section id="csl-intake-stage" class="intake-flow-step" hidden>
+<h3>Start CSL intake</h3>
+<p>Complete the CSL questions, then return here to capture your check-in QR code.</p>
+<a id="open-csl-intake" class="intake-open-button" href="https://donor360.cslplasma.com/profile" target="_blank" rel="noopener noreferrer">Open CSL Intake Form <span aria-hidden="true">↗</span></a>
+<button type="button" id="capture-csl-qr" class="secondary">Capture your QR screenshot</button>
+<p class="scan-privacy muted">Your QR screenshot stays in this browser and is cleared after check-in or if this page is refreshed. It is not uploaded or saved with your visit.</p>
+</section>
+<section id="qr-capture-stage" class="intake-flow-step" hidden>
+<h3>Capture your QR</h3>
+<p>Choose a screenshot of the QR code from the CSL intake page.</p>
+<label class="scan-upload"><span class="scan-upload-button">▧ Choose QR Screenshot</span><span id="qr-file-name" class="scan-file-name">No QR screenshot selected yet</span><input type="file" id="qr-image" accept="image/*"></label>
+<img id="qr-preview" class="qr-preview" alt="Selected CSL check-in QR screenshot preview" hidden>
+<div class="actions"><button type="button" id="use-qr" disabled>Use this QR</button></div>
+<p id="qr-status" class="muted" role="status" aria-live="polite"></p>
+</section>
 <fieldset id="csl-fields" class="form-step">
 <legend>Before Donation</legend>
 <div class="grid">

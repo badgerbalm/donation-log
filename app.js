@@ -16,7 +16,8 @@ const cancel = document.querySelector('#cancel');
 const heading = document.querySelector('#form-title');
 let editing = null;
 let creatingNew = false;
-let entryPhase = 'details';
+let entryPhase = 'intake';
+let qrPreviewUrl = '';
 let activeVisitId = null;
 let scanWasRead = false;
 let records = [];
@@ -270,6 +271,8 @@ function renderWorkflow() {
   const isCsl = type === 'CSL donation';
   const meta = document.querySelector('#visit-meta');
   const cslFields = document.querySelector('#csl-fields');
+  const intake = document.querySelector('#csl-intake-stage');
+  const qrCapture = document.querySelector('#qr-capture-stage');
   const duration = document.querySelector('#duration-stage');
   const scan = document.querySelector('#scan-stage');
   const review = document.querySelector('#scan-review-fields');
@@ -281,19 +284,29 @@ function renderWorkflow() {
   const description = document.querySelector('#phase-description');
   const row = activeRow();
   const phase = isCsl ? entryPhase : 'other';
+  const preCheckin = ['intake', 'qrCapture', 'qrShow'].includes(phase);
+  const checkinLabels = ['Start CSL Intake', 'Capture QR', 'Show QR at desk'];
+  const donationLabels = ['Before Donation', 'Duration', 'Scan Summary'];
+  const labels = preCheckin ? checkinLabels : donationLabels;
   stepper.hidden = !isCsl;
+  stepper.dataset.flow = preCheckin ? 'checkin' : 'donation';
   for (const li of stepper.querySelectorAll('[data-step]')) {
     const num = Number(li.dataset.step);
-    li.classList.toggle('current', isCsl && ((phase === 'details' && num === 1) || (phase === 'duration' && num === 2) || (phase === 'scan' && num === 3)));
-    li.classList.toggle('complete', isCsl && ((phase === 'duration' && num === 1) || (phase === 'scan' && num < 3)));
+    li.querySelector('b').textContent = labels[num - 1];
+    const currentStep = preCheckin ? (phase === 'intake' ? 1 : phase === 'qrCapture' ? 2 : 3) : (phase === 'details' ? 1 : phase === 'duration' ? 2 : 3);
+    const completedThrough = preCheckin ? currentStep - 1 : (phase === 'duration' ? 1 : phase === 'scan' ? 2 : 0);
+    li.classList.toggle('current', isCsl && num === currentStep);
+    li.classList.toggle('complete', isCsl && num <= completedThrough);
   }
-  meta.hidden = isCsl && phase !== 'details';
+  meta.hidden = isCsl && !['intake', 'details'].includes(phase);
+  intake.hidden = !isCsl || phase !== 'intake';
+  qrCapture.hidden = !isCsl || phase !== 'qrCapture';
   cslFields.hidden = !isCsl || phase !== 'details';
   duration.hidden = !isCsl || phase !== 'duration';
   scan.hidden = isCsl ? phase !== 'scan' : false;
   review.hidden = isCsl ? phase !== 'scan' : !scanWasRead;
   notes.hidden = isCsl;
-  context.hidden = !isCsl || phase === 'details';
+  context.hidden = !isCsl || ['intake', 'qrCapture', 'qrShow', 'details'].includes(phase);
   if (context.hidden) context.textContent = '';
   else {
     const pieces = [];
@@ -302,7 +315,9 @@ function renderWorkflow() {
     if (phase === 'scan' && row?.duration !== null && row?.duration !== undefined) pieces.push('Duration ' + row.duration + ' min');
     context.textContent = pieces.join(' · ');
   }
-  back.hidden = !isCsl || phase === 'details';
+  back.hidden = !isCsl || phase === 'intake' || phase === 'details';
+  back.textContent = phase === 'duration' ? 'Back to screening' : phase === 'scan' ? 'Back to duration' : 'Back';
+  saveButton.hidden = isCsl && preCheckin;
   saveButton.textContent = isCsl
     ? (phase === 'details' ? 'Save Visit Details' : phase === 'duration' ? 'Save Duration' : 'Save Visit')
     : 'Save Visit';
@@ -314,17 +329,30 @@ function renderWorkflow() {
   } else {
     document.querySelector('#scan-stage-title').textContent = 'Scan CSL Confirmation';
     document.querySelector('#scan-help').textContent = 'Choose a CSL Donation Details screenshot to add the remaining readings.';
+    if (phase === 'intake') {
+      heading.textContent = 'CSL Check-in';
+      description.textContent = 'Open CSL intake, complete the questions, then return here with your QR screenshot.';
+    } else if (phase === 'qrCapture') {
+      heading.textContent = 'Capture your QR';
+      description.textContent = 'Select the QR screenshot CSL created for this check-in.';
+    } else if (phase === 'qrShow') {
+      heading.textContent = 'Show QR at the desk';
+      description.textContent = 'Keep this QR visible while CSL scans it at the front desk.';
+    } else if (phase === 'details') {
+      heading.textContent = row ? 'Before Visit' : 'Before Donation';
+      description.textContent = 'Enter your arm and CSL screening values before donation.';
+    } else if (phase === 'duration') {
+      heading.textContent = 'Donation Duration';
+      description.textContent = 'After your donation, enter how long it took.';
+    } else {
+      heading.textContent = 'Scan Visit Summary';
+      description.textContent = 'Choose the CSL Donation Details screenshot. Review all values before saving.';
+    }
   }
-  if (isCsl && phase === 'details') {
-    heading.textContent = row ? 'Before Visit' : 'New Visit';
-    description.textContent = 'Enter your visit date and CSL screening values before donation.';
-  } else if (isCsl && phase === 'duration') {
-    heading.textContent = 'Donation Duration';
-    description.textContent = 'After your donation, enter how long it took.';
-  } else if (isCsl) {
-    heading.textContent = 'Scan Visit Summary';
-    description.textContent = 'Choose the CSL Donation Details screenshot. Review all values before saving.';
-  }
+  const deskQr = document.querySelector('#qr-display');
+  if (qrPreviewUrl) { deskQr.src = qrPreviewUrl; deskQr.hidden = false; }
+  else { deskQr.removeAttribute('src'); deskQr.hidden = true; }
+
   if (isCsl && phase === 'duration') {
     document.querySelector('#screening-summary').textContent = [
       row?.date ? new Date(row.date + 'T12:00:00').toLocaleDateString() : '',
@@ -362,12 +390,13 @@ function renderLastVisitSummary() {
 }
 function resetForm() {
   clearScanSelection();
+  clearQrSelection();
   form.reset();
   editing = null;
   activeVisitId = null;
   creatingNew = false;
   scanWasRead = false;
-  entryPhase = 'details';
+  entryPhase = 'intake';
   heading.textContent = 'New Visit';
   cancel.hidden = true;
   form.elements.arm.value = defaultArm();
@@ -428,9 +457,11 @@ function renderEntryDashboard() {
   const panel = document.querySelector('#pending-visits');
   if (!panel) return;
   const todaysVisits = records.filter(row => row.date === localToday()).sort((a,b) => dateTimeKey(b).localeCompare(dateTimeKey(a)));
-  const showDashboard = editing === null && !creatingNew;
+  const showQrAtHome = creatingNew && entryPhase === 'qrShow';
+  const showDashboard = editing === null && (!creatingNew || showQrAtHome);
   panel.hidden = !showDashboard;
-  document.querySelector('#entry-editor').hidden = !editing && !creatingNew;
+  document.querySelector('#home-qr-card').hidden = !showQrAtHome;
+  document.querySelector('#entry-editor').hidden = !editing && (!creatingNew || showQrAtHome);
   const list = document.querySelector('#pending-list');
   list.replaceChildren();
   document.querySelector('#today-empty-state').hidden = todaysVisits.length > 0;
@@ -793,6 +824,8 @@ cancel.addEventListener('click', () => {
 document.querySelector('#phase-back').addEventListener('click', () => {
   if (entryPhase === 'scan') entryPhase = 'duration';
   else if (entryPhase === 'duration') entryPhase = 'details';
+  else if (entryPhase === 'qrShow') entryPhase = 'qrCapture';
+  else if (entryPhase === 'qrCapture') entryPhase = 'intake';
   renderWorkflow();
 });
 form.elements.visitType.addEventListener('change', () => {
@@ -802,8 +835,9 @@ form.elements.visitType.addEventListener('change', () => {
   if (isCsl) {
     form.elements.arm.value = defaultArm();
     for (const name of ['time','systolic','diastolic','pulse','weight','temperature','duration','notes']) form.elements[name].value = '';
-    entryPhase = 'details';
-    status.textContent = 'CSL selected. Start with the screening values before donation.';
+    entryPhase = 'intake';
+    status.textContent = 'CSL selected. Complete the CSL intake and capture its QR screenshot to continue.';
+    openCslIntakePage();
   } else {
     for (const name of ['time','systolic','diastolic','pulse','weight','temperature','hematocrit','protein','duration','arm']) form.elements[name].value = '';
     entryPhase = 'other';
@@ -817,6 +851,7 @@ document.querySelector('#add-new-visit').addEventListener('click', () => {
   activeVisitId = makeVisitId();
   form.elements.id.value = activeVisitId;
   cancel.hidden = false;
+  openCslIntakePage();
   renderEntryDashboard();
   form.elements.date.focus();
 });
@@ -1110,6 +1145,59 @@ chartToggle.addEventListener('click',()=>{
   chartToggle.textContent=panel.hidden?'Show BP graph':'Hide BP graph';
 });
 
+const qrImage=document.querySelector('#qr-image');
+const qrPreview=document.querySelector('#qr-preview');
+const qrDisplay=document.querySelector('#qr-display');
+const qrUseButton=document.querySelector('#use-qr');
+function clearQrSelection(){
+  if(qrPreviewUrl)URL.revokeObjectURL(qrPreviewUrl);
+  qrPreviewUrl='';
+  qrPreview.removeAttribute('src');
+  qrPreview.hidden=true;
+  qrDisplay.removeAttribute('src');
+  qrDisplay.hidden=true;
+  qrImage.value='';
+  qrUseButton.disabled=true;
+  document.querySelector('#qr-file-name').textContent='No QR screenshot selected yet';
+  document.querySelector('#qr-status').textContent='';
+}
+function openCslIntakePage(){
+  window.open('https://donor360.cslplasma.com/profile','_blank','noopener,noreferrer');
+}
+document.querySelector('#capture-csl-qr').addEventListener('click',()=>{
+  entryPhase='qrCapture';
+  renderWorkflow();
+  qrImage.click();
+});
+qrImage.addEventListener('change',()=>{
+  const file=qrImage.files?.[0];
+  if(!file)return;
+  if(!file.type.startsWith('image/')){clearQrSelection();document.querySelector('#qr-status').textContent='Choose an image screenshot of the CSL QR code.';return;}
+  if(file.size>20*1024*1024){clearQrSelection();document.querySelector('#qr-status').textContent='This image is over 20 MB. Choose a smaller screenshot.';return;}
+  if(qrPreviewUrl)URL.revokeObjectURL(qrPreviewUrl);
+  qrPreviewUrl=URL.createObjectURL(file);
+  qrPreview.src=qrPreviewUrl;
+  qrPreview.hidden=false;
+  qrDisplay.src=qrPreviewUrl;
+  document.querySelector('#qr-file-name').textContent=file.name;
+  qrUseButton.disabled=false;
+  document.querySelector('#qr-status').textContent='QR screenshot is ready. It stays in this browser only.';
+});
+qrUseButton.addEventListener('click',()=>{
+  if(!qrPreviewUrl)return;
+  entryPhase='qrShow';
+  renderWorkflow();
+  renderEntryDashboard();
+  status.textContent='Show this QR at the CSL front desk. Continue after check-in.';
+});
+document.querySelector('#qr-checked-in').addEventListener('click',()=>{
+  clearQrSelection();
+  entryPhase='details';
+  renderWorkflow();
+  renderEntryDashboard();
+  form.elements.arm.focus();
+  status.textContent='Check-in complete. Enter your arm, hematocrit, and total protein before donating.';
+});
 const scanImage=document.querySelector('#scan-image');
 const scanReadButton=document.querySelector('#scan-read');
 const scanPreview=document.querySelector('#scan-preview');
