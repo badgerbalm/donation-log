@@ -12,7 +12,7 @@
 <script src="menu.js?v=direct-menu-v2-20261112" defer></script>
 <script src="navigation.js?v=direct-menu-v2-20261112" defer></script>
 <script src="jsQR.js?v=1.4.0" defer></script>
-<script src="app.js?v=local-draft-autosave-20261112-18" defer></script>
+<script src="app.js?v=screening-finger-20261112-19" defer></script>
 </head>
 <body>
 <header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1><svg class="header-blood-drop" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 4C25 15 12 28 12 40a20 20 0 0 0 40 0C52 28 39 15 32 4Z" fill="#ff3349" stroke="#fff" stroke-width="4"/><path d="M24 39c0 5 3 9 8 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg><span>Donation Log</span></h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
@@ -129,14 +129,21 @@
 <div class="actions"><button type="button" id="use-qr" disabled>Use this QR code</button></div>
 <p id="qr-status" class="muted" role="status" aria-live="polite"></p>
 </section>
-<fieldset id="csl-fields" class="form-step">
-<legend>Before Donation</legend>
-<div class="grid">
-<label>Arm<select name="arm"><option value="">Select arm</option><option>Left</option><option>Right</option><option>Both</option></select></label>
+<div id="csl-fields" class="csl-before-fields">
+<fieldset id="screening-fields" class="form-step">
+<legend>Screening</legend>
+<p class="muted screening-hint">Choose the hand and finger used for the hematocrit and protein finger stick.</p>
+<div class="grid"><label>Screening finger<select name="finger" required><option value="">Select finger</option><option>Left thumb</option><option>Left index</option><option>Left middle</option><option>Left ring</option><option>Left little</option><option>Right thumb</option><option>Right index</option><option>Right middle</option><option>Right ring</option><option>Right little</option></select></label>
 <label>Hematocrit (%)<select name="hematocrit"><option>30</option><option>31</option><option>32</option><option>33</option><option>34</option><option>35</option><option>36</option><option>37</option><option>38</option><option>39</option><option>40</option><option>41</option><option>42</option><option>43</option><option>44</option><option>45</option><option>46</option><option>47</option><option>48</option><option value="">Select (30–65)</option><option>49</option><option>50</option><option>51</option><option>52</option><option>53</option><option>54</option><option>55</option><option>56</option><option>57</option><option>58</option><option>59</option><option>60</option><option>61</option><option>62</option><option>63</option><option>64</option><option>65</option></select></label>
 <label>Total Protein (g/dL)<select name="protein"><option value="5.5">5.5</option><option value="5.6">5.6</option><option value="5.7">5.7</option><option value="5.8">5.8</option><option value="5.9">5.9</option><option value="6.0">6.0</option><option value="6.1">6.1</option><option value="6.2">6.2</option><option value="6.3">6.3</option><option value="6.4">6.4</option><option value="6.5">6.5</option><option value="6.6">6.6</option><option value="6.7">6.7</option><option value="6.8">6.8</option><option value="6.9">6.9</option><option value="7.0">7.0</option><option value="7.1">7.1</option><option value="7.2">7.2</option><option value="7.3">7.3</option><option value="7.4">7.4</option><option value="">Select (5.5–9.5)</option><option value="7.5">7.5</option><option value="7.6">7.6</option><option value="7.7">7.7</option><option value="7.8">7.8</option><option value="7.9">7.9</option><option value="8.0">8.0</option><option value="8.1">8.1</option><option value="8.2">8.2</option><option value="8.3">8.3</option><option value="8.4">8.4</option><option value="8.5">8.5</option><option value="8.6">8.6</option><option value="8.7">8.7</option><option value="8.8">8.8</option><option value="8.9">8.9</option><option value="9.0">9.0</option><option value="9.1">9.1</option><option value="9.2">9.2</option><option value="9.3">9.3</option><option value="9.4">9.4</option><option value="9.5">9.5</option></select></label>
 </div>
 </fieldset>
+<fieldset id="donation-arm-fields" class="form-step">
+<legend>Donation</legend>
+<p class="muted screening-hint">Choose the arm used for the plasma donation. The default is based on your last donation.</p>
+<div class="grid"><label>Donation arm<select name="arm" required><option value="">Select arm</option><option>Left</option><option>Right</option><option>Both</option></select></label></div>
+</fieldset>
+</div>
 <fieldset id="duration-stage" class="form-step" hidden>
 <legend>Donation Duration</legend>
 <p class="muted">Enter the completed donation duration, then save to continue.</p>
@@ -188,7 +195,7 @@
 <input type="file" id="file" accept=".json,application/json" hidden>
 </div>
 <p id="history-status" role="status"></p>
-<div class="table-scroll"><table id="history-table"><thead><tr><th>Date</th><th>Visit type</th><th>BP</th><th>Pulse</th><th>Weight</th><th>Temp</th><th>Hematocrit</th><th>Total protein (g/dL)</th><th>Arm / Duration</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
+<div class="table-scroll"><table id="history-table"><thead><tr><th>Date</th><th>Visit type</th><th>BP</th><th>Pulse</th><th>Weight</th><th>Temp</th><th>Screening finger</th><th>Hematocrit</th><th>Total protein (g/dL)</th><th>Donation arm / Duration</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
 <ul id="history"></ul>
 </section>
 </main>
