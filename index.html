@@ -8,11 +8,11 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180-v2.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
-<link rel="stylesheet" href="style.css?v=scan-clipboard-20261112-21">
+<link rel="stylesheet" href="style.css?v=ocr-diagnostic-20261112-24">
 <script src="menu.js?v=direct-menu-v2-20261112" defer></script>
 <script src="navigation.js?v=direct-menu-v2-20261112" defer></script>
 <script src="jsQR.js?v=1.4.0" defer></script>
-<script src="app.js?v=ocr-focused-20261112-23" defer></script>
+<script src="app.js?v=ocr-diagnostic-20261112-24" defer></script>
 </head>
 <body>
 <header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1><svg class="header-blood-drop" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 4C25 15 12 28 12 40a20 20 0 0 0 40 0C52 28 39 15 32 4Z" fill="#ff3349" stroke="#fff" stroke-width="4"/><path d="M24 39c0 5 3 9 8 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg><span>Donation Log</span></h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
@@ -158,7 +158,7 @@
 <p class="scan-privacy muted">The screenshot is processed on this device. It is not uploaded or saved with your visit. The OCR engine and English model download when you scan.</p>
 <p id="scan-status" role="status" aria-live="polite"></p>
 <img id="scan-preview" alt="Selected visit summary screenshot preview" hidden>
-<section id="scan-results" class="scan-results" aria-live="polite" hidden><h4>Possible Readings · Check Each Field</h4><ul id="scan-findings"></ul></section>
+<section id="scan-results" class="scan-results" aria-live="polite" hidden><h4>Possible Readings · Check Each Field</h4><ul id="scan-findings"></ul></section>\n<details id="scan-ocr-debug" class="scan-ocr-debug" hidden><summary>View text detected by the scanner</summary><p class="muted">For troubleshooting only. This text stays in this browser and is not saved or uploaded.</p><pre id="scan-ocr-text"></pre></details>
 </div>
 <fieldset id="scan-review-fields" class="form-step" hidden>
 <legend>Review Scanned Readings</legend>
