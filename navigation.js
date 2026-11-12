@@ -14,7 +14,7 @@
       }
       const trendGroup=document.querySelector('.menu-trends');
       if(trendGroup)trendGroup.open=false;
-      window.dispatchEvent(new CustomEvent('donation-log:close-menu',{detail:{returnFocus:false}}));
+      document.dispatchEvent(new CustomEvent('donation-log:close-menu',{detail:{returnFocus:false}}));
       if(trend)window.dispatchEvent(new CustomEvent('donation-log:trend-selected',{detail:{trend}}));
     });
   }
