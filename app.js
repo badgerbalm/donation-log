@@ -1149,6 +1149,8 @@ const qrImage=document.querySelector('#qr-image');
 const qrPreview=document.querySelector('#qr-preview');
 const qrDisplay=document.querySelector('#qr-display');
 const qrUseButton=document.querySelector('#use-qr');
+const qrPasteButton=document.querySelector('#paste-qr-image');
+const qrStatus=document.querySelector('#qr-status');
 function clearQrSelection(){
   if(qrPreviewUrl)URL.revokeObjectURL(qrPreviewUrl);
   qrPreviewUrl='';
@@ -1159,7 +1161,22 @@ function clearQrSelection(){
   qrImage.value='';
   qrUseButton.disabled=true;
   document.querySelector('#qr-file-name').textContent='No QR screenshot selected yet';
-  document.querySelector('#qr-status').textContent='';
+  qrStatus.textContent='';
+}
+function selectQrImage(file){
+  if(!file)return false;
+  if(!file.type.startsWith('image/')){qrStatus.textContent='Choose an image screenshot of the CSL QR code.';return false;}
+  if(file.size>20*1024*1024){qrStatus.textContent='This image is over 20 MB. Choose a smaller screenshot.';return false;}
+  if(qrPreviewUrl)URL.revokeObjectURL(qrPreviewUrl);
+  qrPreviewUrl=URL.createObjectURL(file);
+  qrPreview.src=qrPreviewUrl;
+  qrPreview.hidden=false;
+  qrDisplay.src=qrPreviewUrl;
+  qrDisplay.hidden=true;
+  document.querySelector('#qr-file-name').textContent=file.name||'Pasted image from clipboard';
+  qrUseButton.disabled=false;
+  qrStatus.textContent='QR screenshot is ready. It stays in this browser only.';
+  return true;
 }
 function openCslIntakePage(){
   window.open('https://donor360.cslplasma.com/profile','_blank','noopener,noreferrer');
@@ -1169,19 +1186,29 @@ document.querySelector('#capture-csl-qr').addEventListener('click',()=>{
   renderWorkflow();
   qrImage.click();
 });
-qrImage.addEventListener('change',()=>{
-  const file=qrImage.files?.[0];
-  if(!file)return;
-  if(!file.type.startsWith('image/')){clearQrSelection();document.querySelector('#qr-status').textContent='Choose an image screenshot of the CSL QR code.';return;}
-  if(file.size>20*1024*1024){clearQrSelection();document.querySelector('#qr-status').textContent='This image is over 20 MB. Choose a smaller screenshot.';return;}
-  if(qrPreviewUrl)URL.revokeObjectURL(qrPreviewUrl);
-  qrPreviewUrl=URL.createObjectURL(file);
-  qrPreview.src=qrPreviewUrl;
-  qrPreview.hidden=false;
-  qrDisplay.src=qrPreviewUrl;
-  document.querySelector('#qr-file-name').textContent=file.name;
-  qrUseButton.disabled=false;
-  document.querySelector('#qr-status').textContent='QR screenshot is ready. It stays in this browser only.';
+qrImage.addEventListener('change',()=>selectQrImage(qrImage.files?.[0]));
+qrPasteButton.addEventListener('click',async()=>{
+  qrPasteButton.disabled=true;
+  qrStatus.textContent='Checking clipboard for an image…';
+  try{
+    if(!navigator.clipboard?.read)throw new Error('Image paste is not supported in this browser. Use Photo library or Choose file instead.');
+    const items=await navigator.clipboard.read();
+    for(const item of items){
+      const imageType=item.types.find(type=>type.startsWith('image/'));
+      if(!imageType)continue;
+      const blob=await item.getType(imageType);
+      const extension=imageType.split('/')[1]?.replace('jpeg','jpg')||'png';
+      const file=new File([blob],'csl-check-in-qr.'+extension,{type:imageType});
+      if(selectQrImage(file))return;
+    }
+    qrStatus.textContent='No image was found on the clipboard. Copy a screenshot of your CSL QR code, then try again.';
+  }catch(error){
+    qrStatus.textContent=error?.name==='NotAllowedError'
+      ? 'Clipboard access was denied. Allow paste when your browser asks, then try again. You can also choose the image from Photo library or Files.'
+      : (error?.message||'Could not read an image from the clipboard. Use Photo library or Choose file instead.');
+  }finally{
+    qrPasteButton.disabled=false;
+  }
 });
 qrUseButton.addEventListener('click',()=>{
   if(!qrPreviewUrl)return;
