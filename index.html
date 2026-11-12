@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
 <link rel="stylesheet" href="style.css">
-<script src="app.js?v=google-reconnect-menu-20261112" defer></script>
+<script src="app.js?v=donation-owner-sign-in-20261113" defer></script>
 </head>
 <body>
 <header><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1>Donation Log</h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-expanded="false" aria-controls="app-menu">Menu</button></div></header>
@@ -19,8 +19,8 @@
 <button type="button" data-page="entry" class="menu-link active">Enter a visit</button>
 <button type="button" data-page="report" class="menu-link">Blood pressure report</button>
 <button type="button" data-page="history" class="menu-link">Visit history</button>
-<a class="menu-link" href="https://badgerbalm.github.io/daily-workout/">Connect Google in Daily Workout</a>
-<p class="muted">After connecting, return here and tap Refresh readings.</p>
+<button type="button" class="menu-link connect-google">Sign in to Donation Log</button>
+<p class="muted connection-status" role="status" aria-live="polite">Sign in here to load your private visit history.</p>
 </nav>
 <main>
 <section class="card report page" data-page-panel="report" aria-labelledby="report-title" hidden>
@@ -29,7 +29,7 @@
 <div id="medications" class="medications"></div>
 <div class="actions"><button type="button" class="secondary" id="toggle-bp-chart" aria-expanded="false" aria-controls="bp-chart-panel">Show BP graph</button></div>
 <p id="report-load-status" class="muted" role="status" aria-live="polite">Loading saved visit readings…</p>
-<div id="report-connection" hidden><a class="button-link" href="https://badgerbalm.github.io/daily-workout/">Open Daily Workout to reconnect</a></div>
+<div id="report-connection" hidden><button type="button" class="connect-google">Sign in to Donation Log</button><p class="muted connection-status" role="status" aria-live="polite"></p></div>
 <div class="actions"><button type="button" class="secondary" id="refresh-report">Refresh readings</button></div>
 <div id="bp-chart-panel" class="chart-wrap" hidden><svg id="bp-chart" role="img" aria-label="Blood pressure readings over time"></svg></div>
 <div id="period-summary" class="period-summary"></div>
@@ -65,7 +65,7 @@
 <div class="actions"><button type="submit">Save visit</button><button type="button" id="cancel" class="secondary" hidden>Cancel edit</button></div>
 </form>
 <p id="status" role="status" aria-live="polite"></p>
-<div id="connection-help" class="scan-box" hidden><h3>Connect your private data</h3><p>Open Daily Workout, tap Menu → Google backup & sync → Connect Google, and finish sign-in. Return here and tap Refresh readings. This sign-in may need to be completed separately in Safari and in the Home Screen app.</p><a class="button-link" href="https://badgerbalm.github.io/daily-workout/">Open Daily Workout to connect</a></div>
+<div id="connection-help" class="scan-box" hidden><h3>Connect your private data</h3><p>Sign in with your Google account here. Google will return you to Donation Log after confirming your identity. Safari and the Home Screen app may each need their own sign-in.</p><button type="button" class="connect-google">Sign in to Donation Log</button><p class="muted connection-status" role="status" aria-live="polite"></p></div>
 <div class="scan-box"><h3>Scan a CSL screenshot</h3><p class="muted">Choose a Donation Details screenshot. Review the fields before saving the visit.</p><label class="upload-label">Choose screenshot<input type="file" id="scan-image" accept="image/*" capture="environment"></label><img id="scan-preview" alt="Selected donation screenshot preview" hidden><p id="scan-status" role="status"></p></div>
 </div>
 </section>
