@@ -241,3 +241,23 @@ header h1{display:flex;align-items:center;gap:10px}
 .prior-visit-card h3{margin:3px 0;color:#063f3b;font-size:1.08rem}
 .prior-visit-card p:last-child{margin:4px 0 0;color:#315d58}
 @media(max-width:420px){.qr-source-actions{grid-template-columns:1fr}}
+
+/* QR desk view: one focused card with the check-in action in view */
+.today-card.qr-only{padding:12px}
+.today-card.qr-only .today-card-heading,
+.today-card.qr-only #today-empty-state,
+.today-card.qr-only #pending-list,
+.today-card.qr-only #dashboard-status,
+.today-card.qr-only>.actions{display:none!important}
+.today-card.qr-only .home-qr-card{margin:0;padding:10px;border-radius:16px;box-shadow:none}
+.today-card.qr-only .home-qr-card .eyebrow{margin-bottom:2px}
+.today-card.qr-only .home-qr-card h2{margin-bottom:4px;font-size:1.22rem}
+.today-card.qr-only .home-qr-card>p:not(.eyebrow){margin:4px 0 8px;font-size:.98rem;line-height:1.35}
+.today-card.qr-only .qr-display{display:block;width:min(100%,360px);height:min(34vh,290px);max-height:290px;margin:6px auto 0;padding:5px;border-radius:12px}
+.today-card.qr-only .home-qr-card>button{min-height:50px;margin-top:8px}
+@media(max-width:600px){
+  main.qr-mode{padding-top:10px}
+  .today-card.qr-only{padding:8px;border-radius:18px}
+  .today-card.qr-only .home-qr-card{padding:8px}
+  .today-card.qr-only .qr-display{width:min(100%,320px);height:min(31vh,250px);max-height:250px}
+}

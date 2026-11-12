@@ -472,6 +472,9 @@ function renderEntryDashboard() {
   const showQrAtHome = creatingNew && entryPhase === 'qrShow';
   const showDashboard = editing === null && (!creatingNew || showQrAtHome);
   panel.hidden = !showDashboard;
+  panel.classList.toggle('qr-only', showQrAtHome);
+  document.querySelector('main').classList.toggle('qr-mode', showQrAtHome);
+  document.querySelector('#last-visit-card').hidden = showQrAtHome;
   document.querySelector('#home-qr-card').hidden = !showQrAtHome;
   document.querySelector('#entry-editor').hidden = !editing && (!creatingNew || showQrAtHome);
   const list = document.querySelector('#pending-list');
