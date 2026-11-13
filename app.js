@@ -641,6 +641,32 @@ function renderHistoryTable(){
   }
 }
 
+function smoothSeriesPath(pointString){
+  const points=pointString.trim().split(/\\s+/).map(pair=>pair.split(',').map(Number));
+  if(points.length<3||points.some(point=>point.length!==2||!point.every(Number.isFinite)))return '';
+  const h=[],slopes=[];
+  for(let i=0;i<points.length-1;i++){
+    const dx=points[i+1][0]-points[i][0];
+    if(dx<=0)return '';
+    h.push(dx);
+    slopes.push((points[i+1][1]-points[i][1])/dx);
+  }
+  const tangents=new Array(points.length);
+  tangents[0]=slopes[0];tangents[points.length-1]=slopes.at(-1);
+  for(let i=1;i<points.length-1;i++){
+    const before=slopes[i-1],after=slopes[i];
+    if(before===0||after===0||Math.sign(before)!==Math.sign(after)){tangents[i]=0;continue;}
+    const w1=2*h[i]+h[i-1],w2=h[i]+2*h[i-1];
+    tangents[i]=(w1+w2)/(w1/before+w2/after);
+  }
+  let path='M '+points[0][0]+' '+points[0][1];
+  for(let i=0;i<points.length-1;i++){
+    const [x1,y1]=points[i],[x2,y2]=points[i+1],dx=h[i];
+    path+=' C '+(x1+dx/3)+' '+(y1+tangents[i]*dx/3)+' '+(x2-dx/3)+' '+(y2-tangents[i+1]*dx/3)+' '+x2+' '+y2;
+  }
+  return path;
+}
+
 function renderHistoryChart(){
   const svg=document.querySelector('#history-chart');
   svg.replaceChildren();
@@ -689,8 +715,8 @@ function renderHistoryChart(){
         const y=panel.bottom-(row[field]-low)/(high-low)*(panel.bottom-panel.top);
         return xDate(row.date)+','+y;
       }).join(' ');
-      const line=document.createElementNS(ns,'polyline');
-      line.setAttribute('points',points);line.setAttribute('fill','none');line.setAttribute('stroke',color);line.setAttribute('stroke-width',panel.fields.length>1?'2.6':'2.4');line.setAttribute('stroke-linejoin','round');line.setAttribute('stroke-linecap','round');
+      const line=document.createElementNS(ns,'path');
+      line.setAttribute('d',smoothSeriesPath(points)||('M '+points.trim().replace(/\\s+/g,' L ')));line.setAttribute('fill','none');line.setAttribute('stroke',color);line.setAttribute('stroke-width',panel.fields.length>1?'2.6':'2.4');line.setAttribute('stroke-linejoin','round');line.setAttribute('stroke-linecap','round');
       const title=document.createElementNS(ns,'title');title.textContent=name+' trend';line.append(title);svg.append(line);
     }
   }
@@ -809,7 +835,7 @@ function drawMetricTrend() {
     const series = readings.filter(row=>Number.isFinite(row[field]));
     if(!series.length)continue;
     const points = series.map(row=>x(Date.parse(row.date+'T'+(row.time||'12:00')+':00'))+','+y(row[field])).join(' ');
-    add('polyline',{points,fill:'none',stroke:color,'stroke-width':2.8,'stroke-linejoin':'round','stroke-linecap':'round'});
+    add('path',{d:smoothSeriesPath(points)||('M '+points.trim().replace(/\\s+/g,' L ')),fill:'none',stroke:color,'stroke-width':2.8,'stroke-linejoin':'round','stroke-linecap':'round'});
     for(const row of series){
       const circle=add('circle',{cx:x(Date.parse(row.date+'T'+(row.time||'12:00')+':00')),cy:y(row[field]),r:4,fill:color});
       const pointTitle=document.createElementNS(ns,'title');
@@ -1143,7 +1169,7 @@ function drawReport() {
   }
   const addSeries=(field,color,title)=>{
     const points=readings.map(row=>xTime(pointTime(row))+','+y(row[field])).join(' ');
-    const poly=document.createElementNS(ns,'polyline');poly.setAttribute('points',points);poly.setAttribute('fill','none');poly.setAttribute('stroke',color);poly.setAttribute('stroke-width','2.5');svg.append(poly);
+    const poly=document.createElementNS(ns,'path');poly.setAttribute('d',smoothSeriesPath(points)||('M '+points.trim().replace(/\\s+/g,' L ')));poly.setAttribute('fill','none');poly.setAttribute('stroke',color);poly.setAttribute('stroke-width','2.5');poly.setAttribute('stroke-linejoin','round');poly.setAttribute('stroke-linecap','round');svg.append(poly);
     readings.forEach(row=>{const dot=document.createElementNS(ns,'circle');dot.setAttribute('cx',xTime(pointTime(row)));dot.setAttribute('cy',y(row[field]));dot.setAttribute('r','3.5');dot.setAttribute('fill',color);dot.setAttribute('aria-label',row.date+(row.time?' '+row.time:'')+' '+title+' '+row[field]);svg.append(dot);});
   };
   addSeries('systolic','#b4422e','Systolic');addSeries('diastolic','#236a83','Diastolic');
