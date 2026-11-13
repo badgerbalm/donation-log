@@ -33,7 +33,7 @@ dialog#app-menu::backdrop{background:#071426aa}
 .menu-trend-links .menu-link.active{background:#58c5a5;border-color:#8ce2c8}
 .trend-range-label{max-width:280px;margin:14px 0}
 .trend-summary{background:#f1f6f5;border-radius:9px;padding:12px;margin:14px 0}
-#metric-trend-chart{display:block;width:100%;min-width:540px;height:370px}
+#metric-trend-chart{display:block;width:100%;min-width:0;height:370px}
 
 header p{margin:0;color:#c1d7d3}
 h1{font-size:clamp(2.3rem,7vw,3.5rem);line-height:1.1;margin:5px 0 12px}
