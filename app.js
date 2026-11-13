@@ -777,7 +777,9 @@ function drawMetricTrend() {
   readings.sort((a,b) => (a.date + ' ' + (a.time || '')).localeCompare(b.date + ' ' + (b.time || '')));
 
   svg.replaceChildren();
-  svg.setAttribute('viewBox','0 0 820 370');
+  const chartWidth=Math.max(320,Math.round(svg.clientWidth||820));
+  const plotLeft=72,plotRight=chartWidth-20;
+  svg.setAttribute('viewBox','0 0 '+chartWidth+' 370');
   svg.setAttribute('aria-label',spec.title + ' in ' + spec.unit);
   if (!readings.length) {
     summary.textContent = 'No ' + spec.title.replace(/ trend$/, '').toLowerCase() + ' readings in this period.';
@@ -793,7 +795,7 @@ function drawMetricTrend() {
 
   const dateRange = readings.map(row => Date.parse(row.date + 'T' + (row.time || '12:00') + ':00'));
   const first = Math.min(...dateRange), last = Math.max(...dateRange);
-  const x = value => 72 + (last === first ? 0.5 : (value - first) / (last - first)) * 710;
+  const x = value => plotLeft + (last === first ? 0.5 : (value - first) / (last - first)) * (plotRight-plotLeft);
   const values = readings.flatMap(row => fieldNames.map(field => row[field]).filter(Number.isFinite));
   let low, high, step;
   if (spec.fixed) [low, high, step] = spec.fixed;
@@ -819,17 +821,17 @@ function drawMetricTrend() {
   const tickCount = 5;
   for (let i=0;i<=tickCount;i++) {
     const value = low + (high-low)*i/tickCount, yy = y(value);
-    add('line',{x1:66,x2:800,y1:yy,y2:yy,stroke:'#d8e2df'});
-    add('text',{x:58,y:yy+4,'text-anchor':'end','font-size':22,fill:'#4d6364'},trendNumber(value,spec.decimals ?? 0));
+    add('line',{x1:plotLeft,x2:plotRight,y1:yy,y2:yy,stroke:'#b9cbc8','stroke-width':1.5});
+    add('text',{x:plotLeft-10,y:yy+5,'text-anchor':'end','font-size':16,fill:'#34494b'},trendNumber(value,spec.decimals ?? 0));
   }
-  add('line',{x1:70,x2:800,y1:bottom,y2:bottom,stroke:'#617777'});
+  add('line',{x1:plotLeft,x2:plotRight,y1:bottom,y2:bottom,stroke:'#52696a','stroke-width':2});
   const showYearLabels = last - first > 330 * 24 * 60 * 60 * 1000;
   const labelCount = Math.min(5, readings.length);
   for(let i=0;i<labelCount;i++){
     const index = labelCount===1 ? readings.length-1 : Math.round(i*(readings.length-1)/(labelCount-1));
     const row = readings[index], xx = x(dateRange[index]);
-    add('line',{x1:xx,x2:xx,y1:bottom,y2:bottom+5,stroke:'#617777'});
-    add('text',{x:xx,y:bottom+25,'text-anchor':'middle','font-size':18,fill:'#4d6364'},trendDateLabel(row.date,showYearLabels));
+    add('line',{x1:xx,x2:xx,y1:bottom,y2:bottom+6,stroke:'#52696a','stroke-width':1.5});
+    add('text',{x:xx,y:bottom+25,'text-anchor':i===0?'start':i===labelCount-1?'end':'middle','font-size':15,fill:'#34494b'},trendDateLabel(row.date,showYearLabels));
   }
   for(const [field,name,color] of spec.fields){
     const series = readings.filter(row=>Number.isFinite(row[field]));
@@ -848,7 +850,7 @@ function drawMetricTrend() {
     for(const [field,name,color] of spec.fields){
       const count=readings.filter(row=>Number.isFinite(row[field])).length;
       add('circle',{cx:legendX+4,cy:345,r:4,fill:color});
-      add('text',{x:legendX+13,y:349,'font-size':18,fill:'#34494b'},name+' · '+count);
+      add('text',{x:legendX+13,y:349,'font-size':15,fill:'#34494b'},name+' · '+count);
       legendX+=125;
     }
   }
