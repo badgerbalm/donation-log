@@ -28,7 +28,15 @@ let medicationEvents = [];
 let visitsLoadState = 'loading';
 let visitsLoadError = '';
 let activeTrend = 'bp';
-window.addEventListener('donation-log:trend-selected',event=>{activeTrend=event.detail?.trend||'bp';drawMetricTrend();});
+window.addEventListener('donation-log:trend-selected',event=>{
+  activeTrend=event.detail?.trend||'bp';
+  const picker=document.querySelector('#trend-chart-select');
+  if(picker)picker.value=activeTrend;
+  drawMetricTrend();
+});
+document.querySelector('#trend-chart-select')?.addEventListener('change',event=>{
+  window.dispatchEvent(new CustomEvent('donation-log:trend-selected',{detail:{trend:event.target.value}}));
+});
 let bpChartRange = '6m';
 
 function savedSession() {
