@@ -826,14 +826,14 @@ function drawMetricTrend() {
   }
   add('line',{x1:plotLeft,x2:plotRight,y1:bottom,y2:bottom,stroke:'#52696a','stroke-width':2});
   const showYearLabels = last - first > 330 * 24 * 60 * 60 * 1000;
-  const labelCount = Math.min(chartWidth<=560?3:5, readings.length);
+  const labelCount = Math.min(6, readings.length);
   for(let i=0;i<labelCount;i++){
     const index = labelCount===1 ? readings.length-1 : Math.round(i*(readings.length-1)/(labelCount-1));
     const row = readings[index], xx = x(dateRange[index]);
+    const [year,month,day] = row.date.split('-');
+    const axisDate = Number(month)+'/'+Number(day)+(showYearLabels?'/'+year.slice(-2):'');
     add('line',{x1:xx,x2:xx,y1:bottom,y2:bottom+6,stroke:'#52696a','stroke-width':1.5});
-    const labelY=bottom+20;
-    const dateLabel=add('text',{x:xx,y:labelY,'text-anchor':'end','font-size':18,fill:'#34494b'},trendDateLabel(row.date,showYearLabels));
-    dateLabel.setAttribute('transform','rotate(-40 '+xx+' '+labelY+')');
+    add('text',{x:xx,y:bottom+27,'text-anchor':'middle','font-size':18,fill:'#34494b'},axisDate);
   }
   for(const [field,name,color] of spec.fields){
     const series = readings.filter(row=>Number.isFinite(row[field]));
