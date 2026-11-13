@@ -40,17 +40,18 @@
 </aside>
 <main>
 <section class="card page" data-page-panel="trend" aria-labelledby="trend-title" hidden>
-<h2 id="trend-title">Blood pressure trend</h2>
-<p id="trend-description" class="muted">Recorded measurements over time. Blood pressure values are screening readings and may not be resting readings.</p>
-<label class="trend-range-label">Chart
-<select id="trend-chart-select">
-<option value="bp">Blood pressure</option>
-<option value="hematocrit">Hematocrit</option>
-<option value="temperature">Temperature</option>
-<option value="protein">Total protein</option>
-<option value="weight">Weight</option>
+<h2 id="trend-title" class="trend-title-heading">
+<label class="trend-title-picker">
+<select id="trend-chart-select" aria-label="Select trend chart">
+<option value="bp">Blood pressure trend</option>
+<option value="hematocrit">Hematocrit trend</option>
+<option value="temperature">Temperature trend</option>
+<option value="protein">Total protein trend</option>
+<option value="weight">Weight trend</option>
 </select>
 </label>
+</h2>
+<p id="trend-description" class="muted">Recorded measurements over time. Blood pressure values are screening readings and may not be resting readings.</p>
 <label class="trend-range-label">Date range
 <select id="trend-range">
 <option value="all">All available history</option>
