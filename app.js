@@ -833,7 +833,9 @@ function drawMetricTrend() {
     const [year,month,day] = row.date.split('-');
     const axisDate = Number(month)+'/'+Number(day)+(showYearLabels?'/'+year.slice(-2):'');
     add('line',{x1:xx,x2:xx,y1:bottom,y2:bottom+6,stroke:'#52696a','stroke-width':1.5});
-    add('text',{x:xx,y:bottom+27,'text-anchor':'middle','font-size':18,fill:'#34494b'},axisDate);
+    const labelY=bottom+29;
+    const dateLabel=add('text',{x:xx,y:labelY,'text-anchor':'end','font-size':18,fill:'#34494b'},axisDate);
+    dateLabel.setAttribute('transform','rotate(-40 '+xx+' '+labelY+')');
   }
   for(const [field,name,color] of spec.fields){
     const series = readings.filter(row=>Number.isFinite(row[field]));
