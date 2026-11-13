@@ -38,6 +38,9 @@ dialog#app-menu::backdrop{background:#071426aa}
 .trend-title-picker select{appearance:none;-webkit-appearance:none;width:auto;max-width:100%;min-height:48px;padding:6px 44px 6px 14px;border:1.5px solid #58c5a5;border-radius:12px;background:linear-gradient(135deg,#d7f5ee,#bdebe0);color:#063f3b;font:inherit;font-size:clamp(1.35rem,5vw,1.65rem);font-weight:800;line-height:1.2;cursor:pointer}
 .trend-title-picker select:focus-visible{outline:3px solid #54cbb36b;outline-offset:2px}
 .trend-summary{background:#f1f6f5;border-radius:9px;padding:12px;margin:14px 0}
+.trend-summary{line-height:1.55}
+.trend-summary-latest{font-weight:750}
+.trend-summary-average{color:#34494b}
 #metric-trend-chart{display:block;width:100%;min-width:0;height:370px}
 
 header p{margin:0;color:#c1d7d3}
