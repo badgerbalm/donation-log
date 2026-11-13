@@ -765,8 +765,10 @@ function setTrendSummary(latestText, averageText) {
   const summary = document.querySelector('#trend-summary');
   summary.replaceChildren();
   const latestLine = document.createElement('span');
+  latestLine.className = 'trend-summary-latest';
   latestLine.textContent = latestText;
   const averageLine = document.createElement('span');
+  averageLine.className = 'trend-summary-average';
   averageLine.textContent = averageText;
   summary.append(latestLine, document.createElement('br'), averageLine);
 }
