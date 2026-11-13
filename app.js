@@ -826,12 +826,14 @@ function drawMetricTrend() {
   }
   add('line',{x1:plotLeft,x2:plotRight,y1:bottom,y2:bottom,stroke:'#52696a','stroke-width':2});
   const showYearLabels = last - first > 330 * 24 * 60 * 60 * 1000;
-  const labelCount = Math.min(5, readings.length);
+  const labelCount = Math.min(chartWidth<=560?3:5, readings.length);
   for(let i=0;i<labelCount;i++){
     const index = labelCount===1 ? readings.length-1 : Math.round(i*(readings.length-1)/(labelCount-1));
     const row = readings[index], xx = x(dateRange[index]);
     add('line',{x1:xx,x2:xx,y1:bottom,y2:bottom+6,stroke:'#52696a','stroke-width':1.5});
-    add('text',{x:xx,y:bottom+25,'text-anchor':i===0?'start':i===labelCount-1?'end':'middle','font-size':18,fill:'#34494b'},trendDateLabel(row.date,showYearLabels));
+    const labelY=bottom+20;
+    const dateLabel=add('text',{x:xx,y:labelY,'text-anchor':'end','font-size':18,fill:'#34494b'},trendDateLabel(row.date,showYearLabels));
+    dateLabel.setAttribute('transform','rotate(-40 '+xx+' '+labelY+')');
   }
   for(const [field,name,color] of spec.fields){
     const series = readings.filter(row=>Number.isFinite(row[field]));
@@ -846,11 +848,11 @@ function drawMetricTrend() {
     }
   }
   if(spec.fields.length>1){
-    let legendX=70;
+    let legendX=Math.max(plotLeft,chartWidth-255);
     for(const [field,name,color] of spec.fields){
       const count=readings.filter(row=>Number.isFinite(row[field])).length;
-      add('circle',{cx:legendX+4,cy:345,r:4,fill:color});
-      add('text',{x:legendX+13,y:349,'font-size':15,fill:'#34494b'},name+' · '+count);
+      add('circle',{cx:legendX+4,cy:20,r:4,fill:color});
+      add('text',{x:legendX+13,y:25,'font-size':15,fill:'#34494b'},name+' · '+count);
       legendX+=125;
     }
   }
