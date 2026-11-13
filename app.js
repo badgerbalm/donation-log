@@ -29,7 +29,7 @@ let visitsLoadState = 'loading';
 let visitsLoadError = '';
 let activeTrend = 'bp';
 window.addEventListener('donation-log:trend-selected',event=>{activeTrend=event.detail?.trend||'bp';drawMetricTrend();});
-let bpChartRange = 'all';
+let bpChartRange = '6m';
 
 function savedSession() {
   try {
@@ -173,6 +173,16 @@ function localToday() {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 10);
+}
+function localDateMonthsAgo(months){
+  const date=new Date();
+  const day=date.getDate();
+  date.setDate(1);
+  date.setMonth(date.getMonth()-months);
+  const lastDay=new Date(date.getFullYear(),date.getMonth()+1,0).getDate();
+  date.setDate(Math.min(day,lastDay));
+  date.setMinutes(date.getMinutes()-date.getTimezoneOffset());
+  return date.toISOString().slice(0,10);
 }
 const resumableCslPhases = new Set(['details','duration','scan']);
 function saveLocalCslDraft(phase=entryPhase){
@@ -731,15 +741,9 @@ function drawMetricTrend() {
     ? 'Recorded blood pressure over time. Donation screening readings may not be resting or home readings.'
     : 'Recorded ' + spec.title.replace(/ trend$/, '').toLowerCase() + ' measurements over time.';
 
-  const period = document.querySelector('#trend-range')?.value || 'all';
-  let cutoff = '';
-  if (period !== 'all') {
-    const years = period === '1y' ? 1 : 5;
-    const date = new Date();
-    date.setFullYear(date.getFullYear() - years);
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    cutoff = date.toISOString().slice(0, 10);
-  }
+  const period = document.querySelector('#trend-range')?.value || '6m';
+  const periodMonths={'3m':3,'6m':6,'1y':12,'5y':60}[period];
+  const cutoff=periodMonths?localDateMonthsAgo(periodMonths):'';
   const fieldNames = spec.fields.map(field => field[0]);
   let readings = records.filter(row => validDate(row.date) && (!cutoff || row.date >= cutoff));
   if (activeTrend === 'bp') readings = readings.filter(row => Number.isFinite(row.systolic) && Number.isFinite(row.diastolic));
@@ -1100,7 +1104,8 @@ function drawReport() {
     medications.append(item);
   }
   const allReadings = records.filter(row => row.systolic !== null && row.diastolic !== null).sort((a,b)=>(a.date+' '+a.time).localeCompare(b.date+' '+b.time));
-  const rangeCutoff = bpChartRange === 'all' ? '' : new Date(Date.now() - ({'3y':1095,'1y':365,'6m':183}[bpChartRange] || 0) * 86400000).toISOString().slice(0,10);
+  const bpRangeMonths={'3m':3,'6m':6,'1y':12,'3y':36}[bpChartRange];
+  const rangeCutoff=bpRangeMonths?localDateMonthsAgo(bpRangeMonths):'';
   const readings = rangeCutoff ? allReadings.filter(row => row.date >= rangeCutoff) : allReadings;
   const rangeCount=document.querySelector('#bp-chart-count');if(rangeCount)rangeCount.textContent=readings.length+' of '+allReadings.length+' readings';
   const svg = document.querySelector('#bp-chart');
