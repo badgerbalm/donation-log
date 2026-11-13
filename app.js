@@ -761,6 +761,16 @@ function trendDateLabel(date, includeYear = true) {
   });
 }
 
+function setTrendSummary(latestText, averageText) {
+  const summary = document.querySelector('#trend-summary');
+  summary.replaceChildren();
+  const latestLine = document.createElement('span');
+  latestLine.textContent = latestText;
+  const averageLine = document.createElement('span');
+  averageLine.textContent = averageText;
+  summary.append(latestLine, document.createElement('br'), averageLine);
+}
+
 function drawMetricTrend() {
   const spec = trendSpecs[activeTrend] || trendSpecs.bp;
   const title = document.querySelector('#trend-title');
@@ -872,15 +882,18 @@ function drawMetricTrend() {
   }
   if(activeTrend==='bp'){
     const latest=readings.at(-1);
-    const systolic=readings.map(row=>row.systolic),diastolic=readings.map(row=>row.diastolic);
-    summary.textContent='Latest '+latest.systolic+'/'+latest.diastolic+' mm Hg on '+trendDateLabel(latest.date)+
-      ' · '+readings.length+' readings · systolic '+Math.min(...systolic)+'–'+Math.max(...systolic)+
-      ' · diastolic '+Math.min(...diastolic)+'–'+Math.max(...diastolic);
+    const mean=field=>Math.round(readings.reduce((total,row)=>total+row[field],0)/readings.length);
+    setTrendSummary(
+      'Latest reading: '+latest.systolic+'/'+latest.diastolic+' mm Hg on '+trendDateLabel(latest.date)+'.',
+      'Average for this range: '+mean('systolic')+'/'+mean('diastolic')+' mm Hg ('+readings.length+' readings).'
+    );
   } else {
-    const field=fieldNames[0],latest=readings.at(-1),measurements=readings.map(row=>row[field]);
-    summary.textContent='Latest '+trendNumber(latest[field],spec.decimals)+' '+spec.unit+' on '+trendDateLabel(latest.date)+
-      ' · '+readings.length+' readings · range '+trendNumber(Math.min(...measurements),spec.decimals)+'–'+
-      trendNumber(Math.max(...measurements),spec.decimals)+' '+spec.unit;
+    const field=fieldNames[0],latest=readings.at(-1);
+    const average=readings.reduce((total,row)=>total+row[field],0)/readings.length;
+    setTrendSummary(
+      'Latest reading: '+trendNumber(latest[field],spec.decimals)+' '+spec.unit+' on '+trendDateLabel(latest.date)+'.',
+      'Average for this range: '+trendNumber(average,spec.decimals)+' '+spec.unit+' ('+readings.length+' readings).'
+    );
   }
 }
 
