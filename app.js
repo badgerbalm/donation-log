@@ -1811,8 +1811,10 @@ function parseDonationScreenshot(text){
   const weightValue=weight||genericWeight?.slice(1)||unitWeight?.slice(1)||null;
   const temperatureValue=temperature||genericTemperature?.slice(1)||null;
   const number=(value,min,max,decimals=false)=>{
-    if(!value)return null;
-    const parsed=Number(String(value[0]).replace(',','.'));
+    if(value===null||value===undefined||value==='')return null;
+    const raw=Array.isArray(value)?value[0]:value;
+    if(raw===null||raw===undefined||raw==='')return null;
+    const parsed=Number(String(raw).replace(',','.'));
     return Number.isFinite(parsed)&&parsed>=min&&parsed<=max&&(decimals||Number.isInteger(parsed))?parsed:null;
   };
   let systolic=number(bpValues?.[0],60,300);
