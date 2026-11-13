@@ -675,12 +675,12 @@ function renderHistoryChart(){
       if(low===high)high=low+panel.step;
     }
     const label=document.createElementNS(ns,'text');
-    label.setAttribute('x','8');label.setAttribute('y',String(panel.top+12));label.setAttribute('font-size','13');label.setAttribute('font-weight','700');label.setAttribute('fill','#17252b');
+    label.setAttribute('x','8');label.setAttribute('y',String(panel.top+12));label.setAttribute('font-size','16');label.setAttribute('font-weight','700');label.setAttribute('fill','#17252b');
     label.textContent=panel.name+' ('+panel.unit+')';svg.append(label);
     for(let value=low;value<=high+panel.step/100;value+=panel.step){
       const y=panel.bottom-(value-low)/(high-low)*(panel.bottom-panel.top);
       const grid=document.createElementNS(ns,'line');grid.setAttribute('x1','68');grid.setAttribute('x2','748');grid.setAttribute('y1',String(y));grid.setAttribute('y2',String(y));grid.setAttribute('stroke','#d8e2df');grid.setAttribute('stroke-width','1');svg.append(grid);
-      const tick=document.createElementNS(ns,'text');tick.setAttribute('x','62');tick.setAttribute('y',String(y+4));tick.setAttribute('text-anchor','end');tick.setAttribute('font-size','11');tick.setAttribute('fill','#4d6364');tick.textContent=String(Number(value.toFixed(1)));svg.append(tick);
+      const tick=document.createElementNS(ns,'text');tick.setAttribute('x','62');tick.setAttribute('y',String(y+4));tick.setAttribute('text-anchor','end');tick.setAttribute('font-size','15');tick.setAttribute('fill','#4d6364');tick.textContent=String(Number(value.toFixed(1)));svg.append(tick);
     }
     for(const [field,name,color] of panel.fields){
       const vals=dated.filter(row=>Number.isFinite(row[field]));
@@ -703,9 +703,9 @@ function renderHistoryChart(){
     if(index%yearStride!==0&&year!==yearEnd)return;
     const x=Math.max(72,Math.min(744,xDate(year+'-01-01')));
     const mark=document.createElementNS(ns,'line');mark.setAttribute('x1',String(x));mark.setAttribute('x2',String(x));mark.setAttribute('y1','615');mark.setAttribute('y2','620');mark.setAttribute('stroke','#617777');svg.append(mark);
-    const label=document.createElementNS(ns,'text');label.setAttribute('x',String(x));label.setAttribute('y','645');label.setAttribute('text-anchor','middle');label.setAttribute('font-size','11');label.setAttribute('fill','#4d6364');label.textContent=String(year);svg.append(label);
+    const label=document.createElementNS(ns,'text');label.setAttribute('x',String(x));label.setAttribute('y','645');label.setAttribute('text-anchor','middle');label.setAttribute('font-size','15');label.setAttribute('fill','#4d6364');label.textContent=String(year);svg.append(label);
   });
-  const legend=document.createElementNS(ns,'text');legend.setAttribute('x','748');legend.setAttribute('y','20');legend.setAttribute('text-anchor','end');legend.setAttribute('font-size','11');legend.setAttribute('fill','#4d6364');legend.textContent=allValues.length+' measurements';svg.append(legend);
+  const legend=document.createElementNS(ns,'text');legend.setAttribute('x','748');legend.setAttribute('y','20');legend.setAttribute('text-anchor','end');legend.setAttribute('font-size','15');legend.setAttribute('fill','#4d6364');legend.textContent=allValues.length+' measurements';svg.append(legend);
 }
 
 
@@ -794,7 +794,7 @@ function drawMetricTrend() {
   for (let i=0;i<=tickCount;i++) {
     const value = low + (high-low)*i/tickCount, yy = y(value);
     add('line',{x1:66,x2:800,y1:yy,y2:yy,stroke:'#d8e2df'});
-    add('text',{x:58,y:yy+4,'text-anchor':'end','font-size':12,fill:'#4d6364'},trendNumber(value,spec.decimals ?? 0));
+    add('text',{x:58,y:yy+4,'text-anchor':'end','font-size':16,fill:'#4d6364'},trendNumber(value,spec.decimals ?? 0));
   }
   add('line',{x1:70,x2:800,y1:bottom,y2:bottom,stroke:'#617777'});
   const showYearLabels = last - first > 330 * 24 * 60 * 60 * 1000;
@@ -803,7 +803,7 @@ function drawMetricTrend() {
     const index = labelCount===1 ? readings.length-1 : Math.round(i*(readings.length-1)/(labelCount-1));
     const row = readings[index], xx = x(dateRange[index]);
     add('line',{x1:xx,x2:xx,y1:bottom,y2:bottom+5,stroke:'#617777'});
-    add('text',{x:xx,y:bottom+25,'text-anchor':'middle','font-size':11,fill:'#4d6364'},trendDateLabel(row.date,showYearLabels));
+    add('text',{x:xx,y:bottom+25,'text-anchor':'middle','font-size':15,fill:'#4d6364'},trendDateLabel(row.date,showYearLabels));
   }
   for(const [field,name,color] of spec.fields){
     const series = readings.filter(row=>Number.isFinite(row[field]));
@@ -822,7 +822,7 @@ function drawMetricTrend() {
     for(const [field,name,color] of spec.fields){
       const count=readings.filter(row=>Number.isFinite(row[field])).length;
       add('circle',{cx:legendX+4,cy:345,r:4,fill:color});
-      add('text',{x:legendX+13,y:349,'font-size':12,fill:'#34494b'},name+' · '+count);
+      add('text',{x:legendX+13,y:349,'font-size':16,fill:'#34494b'},name+' · '+count);
       legendX+=125;
     }
   }
@@ -1139,7 +1139,7 @@ function drawReport() {
   const y=value=>plotBottom-(value-low)/(high-low)*(plotBottom-plotTop);
   for(let tick=low;tick<=high;tick+=20){
     const line=document.createElementNS(ns,'line');line.setAttribute('x1',plotLeft);line.setAttribute('x2',plotRight);line.setAttribute('y1',y(tick));line.setAttribute('y2',y(tick));line.setAttribute('stroke','#d8e2df');svg.append(line);
-    const label=document.createElementNS(ns,'text');label.setAttribute('x',plotLeft-8);label.setAttribute('y',y(tick)+4);label.setAttribute('text-anchor','end');label.setAttribute('font-size','12');label.textContent=String(tick);svg.append(label);
+    const label=document.createElementNS(ns,'text');label.setAttribute('x',plotLeft-8);label.setAttribute('y',y(tick)+4);label.setAttribute('text-anchor','end');label.setAttribute('font-size','16');label.textContent=String(tick);svg.append(label);
   }
   const addSeries=(field,color,title)=>{
     const points=readings.map(row=>xTime(pointTime(row))+','+y(row[field])).join(' ');
@@ -1159,9 +1159,9 @@ function drawReport() {
     const time=minTime+(maxTime-minTime)*index/4;const tickX=xTime(time);
     const mark=document.createElementNS(ns,'line');mark.setAttribute('x1',tickX);mark.setAttribute('x2',tickX);mark.setAttribute('y1',axisY);mark.setAttribute('y2',axisY+5);mark.setAttribute('stroke','#617777');svg.append(mark);
     const date=new Date(time);const labelText=(maxTime-minTime)>3*365*86400000?String(date.getUTCFullYear()):date.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'2-digit',timeZone:'UTC'});
-    const label=document.createElementNS(ns,'text');label.setAttribute('x',tickX);label.setAttribute('y',axisY+20);label.setAttribute('text-anchor',index===0?'start':index===4?'end':'middle');label.setAttribute('font-size','11');label.setAttribute('fill','#4d6364');label.textContent=labelText;svg.append(label);
+    const label=document.createElementNS(ns,'text');label.setAttribute('x',tickX);label.setAttribute('y',axisY+20);label.setAttribute('text-anchor',index===0?'start':index===4?'end':'middle');label.setAttribute('font-size','15');label.setAttribute('fill','#4d6364');label.textContent=labelText;svg.append(label);
   }
-  const legend=document.createElementNS(ns,'text');legend.setAttribute('x',plotRight);legend.setAttribute('y',22);legend.setAttribute('text-anchor','end');legend.setAttribute('font-size','12');legend.textContent='● Systolic   ● Diastolic   ⋮ Medication';svg.append(legend);
+  const legend=document.createElementNS(ns,'text');legend.setAttribute('x',plotRight);legend.setAttribute('y',22);legend.setAttribute('text-anchor','end');legend.setAttribute('font-size','16');legend.textContent='● Systolic   ● Diastolic   ⋮ Medication';svg.append(legend);
   const periods=[['Before Feb 25, 2026',r=>r.date<'2026-02-25'],['Feb 25–May 31, 2026',r=>r.date>='2026-02-25'&&r.date<'2026-06-01'],['Jun 1, 2026 onward',r=>r.date>='2026-06-01']];
   const summary=document.querySelector('#period-summary');summary.replaceChildren();
   for(const [name,include] of periods){const subset=readings.filter(include);const box=document.createElement('div');if(subset.length){const mean=key=>Math.round(subset.reduce((total,row)=>total+row[key],0)/subset.length);box.textContent=name+' · '+subset.length+' readings · average '+mean('systolic')+'/'+mean('diastolic')+' mm Hg';}else box.textContent=name+' · no readings';summary.append(box);}
