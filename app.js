@@ -770,7 +770,11 @@ function drawMetricTrend() {
   const wrap = document.querySelector('#trend-chart-wrap');
   const svg = document.querySelector('#metric-trend-chart');
   if (!title || !svg) return;
-  title.textContent = spec.title;
+  const picker = title.querySelector('#trend-chart-select');
+  if (picker) {
+    picker.value = activeTrend;
+    picker.setAttribute('aria-label', 'Chart: ' + spec.title);
+  }
   description.textContent = activeTrend === 'bp'
     ? 'Recorded blood pressure over time. Donation screening readings may not be resting or home readings.'
     : 'Recorded ' + spec.title.replace(/ trend$/, '').toLowerCase() + ' measurements over time.';
