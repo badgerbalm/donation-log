@@ -306,3 +306,18 @@ header h1{display:flex;align-items:center;gap:10px}
 .scan-ocr-debug{margin-top:12px;padding:12px;border:1px solid #b8ded5;border-radius:12px;background:#f3fbf9;color:#164e48}
 .scan-ocr-debug summary{font-weight:750;cursor:pointer}
 .scan-ocr-debug pre{max-height:18rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:0.82rem/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;color:#173a3d;background:#fff;padding:10px;border-radius:8px}
+
+
+/* Custom palette-matched photo source sheet */
+.photo-source-dialog{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:18px;border:0;background:transparent;color:#063f3b;overflow:visible}
+.photo-source-dialog[open]{display:flex;align-items:center;justify-content:center}
+.photo-source-dialog::backdrop{background:#082c2e70}
+.photo-source-sheet{box-sizing:border-box;width:min(100%,560px);padding:16px;border-radius:22px;background:linear-gradient(145deg,#f8fffd,#e4f8f2);border:1px solid #b9e5dc;box-shadow:0 16px 44px #082c2e44}
+.photo-source-sheet h2{text-align:center;margin:0 0 12px;color:#063f3b;font-size:1.05rem}
+.photo-source-options{overflow:hidden;border:1px solid #c6e8df;border-radius:16px;background:#fff}
+.photo-source-options button{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:58px;padding:12px 16px;border:0;border-radius:0;background:#fff;color:#0b7267;font:inherit;font-size:1.08rem;font-weight:750}
+.photo-source-options button+button{border-top:1px solid #dcebe7}
+.photo-source-options button:active{background:#d8f5ed}
+.photo-source-cancel{width:100%;min-height:56px;margin-top:10px;border:1px solid #58c5a5;border-radius:16px;background:#0b7276;color:#fff;font:inherit;font-weight:800}
+.qr-source-actions>button[hidden]{display:none!important}
+@media(max-width:600px){.photo-source-dialog[open]{align-items:flex-end;justify-content:center;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px))}.photo-source-sheet{border-radius:22px}}
