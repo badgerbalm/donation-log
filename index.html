@@ -127,9 +127,11 @@
 <h3>Capture your QR</h3>
 <p>Choose the QR screenshot you saved from CSL, or paste an image copied to your clipboard.</p>
 <div class="qr-source-actions">
-<button type="button" id="choose-qr-image" class="scan-upload-button">▧ Choose QR Screenshot</button>
-<button type="button" id="paste-qr-image" class="secondary">▣ From Clipboard</button>
+<button type="button" class="scan-upload-button" data-photo-menu-trigger="qr">📷 Add Photo</button>
+<button type="button" id="choose-qr-image" class="secondary" hidden>Choose Photo</button>
+<button type="button" id="paste-qr-image" class="secondary" hidden>Paste Photo</button>
 <input type="file" id="qr-image" accept="image/*" hidden>
+<input type="file" id="qr-camera-image" accept="image/*" capture="environment" hidden>
 </div>
 <p id="qr-file-name" class="scan-file-name">No QR screenshot selected yet</p>
 <img id="qr-preview" class="qr-preview" alt="QR code cropped from the selected CSL screenshot" hidden>
@@ -166,7 +168,13 @@
 <div id="scan-stage" class="scan-box" hidden>
 <h3 id="scan-stage-title">Scan CSL Confirmation</h3>
 <p id="scan-help" class="muted">Choose a CSL Donation Details screenshot to add the remaining readings.</p>
-<div class="qr-source-actions"><button type="button" id="choose-scan-image" class="scan-upload-button">▧ Choose Photo or File</button><button type="button" id="paste-scan-image" class="secondary">▣ Paste from Clipboard</button><input type="file" id="scan-image" accept="image/*" hidden></div><p id="scan-file-name" class="scan-file-name">No screenshot selected yet</p>
+<div class="qr-source-actions">
+<button type="button" class="scan-upload-button" data-photo-menu-trigger="scan">📷 Add Photo</button>
+<button type="button" id="choose-scan-image" class="secondary" hidden>Choose Photo</button>
+<button type="button" id="paste-scan-image" class="secondary" hidden>Paste Photo</button>
+<input type="file" id="scan-image" accept="image/*" hidden>
+<input type="file" id="scan-camera-image" accept="image/*" capture="environment" hidden>
+</div><p id="scan-file-name" class="scan-file-name">No screenshot selected yet</p>
 <div class="actions"><button type="button" id="scan-read" disabled>Read Screenshot</button></div>
 <p class="scan-privacy muted">The screenshot is processed on this device. It is not uploaded or saved with your visit. The OCR engine and English model download when you scan.</p>
 <p id="scan-status" role="status" aria-live="polite"></p>
@@ -213,6 +221,15 @@
 <ul id="history"></ul>
 </section>
 </main>
+<dialog id="photo-source-dialog" class="photo-source-dialog" aria-labelledby="photo-source-title">
+<div class="photo-source-sheet">
+<h2 id="photo-source-title">Add Photo</h2>
+<button type="button" data-photo-action="take"><span aria-hidden="true">📷</span>Take Photo</button>
+<button type="button" data-photo-action="choose"><span aria-hidden="true">🖼️</span>Choose Photo</button>
+<button type="button" data-photo-action="paste"><span aria-hidden="true">📋</span>Paste Photo</button>
+<button type="button" data-photo-action="cancel" class="photo-source-cancel">Cancel</button>
+</div>
+</dialog>
 <dialog id="scan-dialog"><form method="dialog"><h2>Review screenshot details</h2><p id="scan-message" role="status"></p><div class="actions"><button value="close" class="secondary">Close</button></div></form></dialog>
 </body>
 </html>
