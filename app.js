@@ -1299,6 +1299,7 @@ chartToggle.addEventListener('click',()=>{
 });
 
 const qrImage=document.querySelector('#qr-image');
+const qrCameraImage=document.querySelector('#qr-camera-image');
 const qrPreview=document.querySelector('#qr-preview');
 const qrDisplay=document.querySelector('#qr-display');
 const qrUseButton=document.querySelector('#use-qr');
@@ -1428,7 +1429,8 @@ document.querySelector('#open-csl-intake').addEventListener('click',()=>{
 });
 document.querySelector('#choose-qr-image').addEventListener('click',()=>qrImage.click());
 qrImage.addEventListener('change',()=>{void selectQrImage(qrImage.files?.[0]);});
-qrPasteButton.addEventListener('click',async()=>{
+qrCameraImage.addEventListener('change',()=>{const file=qrCameraImage.files?.[0];if(file)void selectQrImage(file);qrCameraImage.value='';});
+async function pasteQrImage(){
   qrPasteButton.disabled=true;
   qrStatus.textContent='Checking clipboard for an image…';
   try{
@@ -1450,7 +1452,8 @@ qrPasteButton.addEventListener('click',async()=>{
   }finally{
     qrPasteButton.disabled=false;
   }
-});
+}
+qrPasteButton.addEventListener('click',()=>{void pasteQrImage();});
 qrCropButton.addEventListener('click',()=>{
   qrCropEditor.hidden=false;
   qrCropSelection.hidden=true;
@@ -1682,6 +1685,7 @@ document.querySelector('#qr-checked-in').addEventListener('click',async()=>{
   status.textContent='Check-in complete. Enter your arm, hematocrit, and total protein before donating. Progress saves on this device as you enter it.';
 });
 const scanImage=document.querySelector('#scan-image');
+const scanCameraImage=document.querySelector('#scan-camera-image');
 const scanReadButton=document.querySelector('#scan-read');
 const scanPreview=document.querySelector('#scan-preview');
 const scanStatus=document.querySelector('#scan-status');
@@ -1739,8 +1743,9 @@ function acceptScanImage(file){
 }
 document.querySelector('#choose-scan-image').addEventListener('click',()=>scanImage.click());
 scanImage.addEventListener('change',()=>acceptScanImage(scanImage.files?.[0]));
-document.querySelector('#paste-scan-image').addEventListener('click',async event=>{
-  const button=event.currentTarget;
+scanCameraImage.addEventListener('change',()=>{const file=scanCameraImage.files?.[0];if(file)acceptScanImage(file);scanCameraImage.value='';});
+async function pasteScanImage(){
+  const button=document.querySelector('#paste-scan-image');
   button.disabled=true;
   scanStatus.textContent='Checking clipboard for an image…';
   try{
@@ -1759,7 +1764,34 @@ document.querySelector('#paste-scan-image').addEventListener('click',async event
       ? 'Clipboard access was denied. Allow paste when your browser asks, then try again. You can also choose the image from Photo Library or Files.'
       : (error?.message||'Could not read an image from the clipboard. Choose the screenshot instead.');
   }finally{button.disabled=false;}
+}
+document.querySelector('#paste-scan-image').addEventListener('click',()=>{void pasteScanImage();});
+
+const photoSourceDialog=document.querySelector('#photo-source-dialog');
+let photoSourceWorkflow='';
+document.querySelectorAll('[data-photo-menu-trigger]').forEach(button=>{
+  button.addEventListener('click',()=>{
+    photoSourceWorkflow=button.dataset.photoMenuTrigger;
+    photoSourceDialog.showModal();
+  });
 });
+photoSourceDialog.querySelectorAll('[data-photo-action]').forEach(button=>{
+  button.addEventListener('click',()=>{
+    const action=button.dataset.photoAction;
+    photoSourceDialog.close();
+    if(action==='cancel')return;
+    if(photoSourceWorkflow==='qr'){
+      if(action==='take')qrCameraImage.click();
+      else if(action==='choose')qrImage.click();
+      else if(action==='paste')void pasteQrImage();
+    }else if(photoSourceWorkflow==='scan'){
+      if(action==='take')scanCameraImage.click();
+      else if(action==='choose')scanImage.click();
+      else if(action==='paste')void pasteScanImage();
+    }
+  });
+});
+
 
 async function prepareScanImage(file){
   try{
