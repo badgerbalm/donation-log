@@ -1768,13 +1768,14 @@ function acceptScanImage(file){
   if(scanPreviewUrl)URL.revokeObjectURL(scanPreviewUrl);
   scanSelectedFile=file;
   scanPreviewUrl=URL.createObjectURL(file);
+  scanPreview.addEventListener('load',()=>scanReadButton.scrollIntoView({behavior:'smooth',block:'center'}),{once:true});
   scanPreview.src=scanPreviewUrl;
   scanPreview.hidden=false;
-  document.querySelector('#scan-file-name').textContent=file.name;
+  document.querySelector('#scan-file-name').textContent=file.name||'Screenshot selected';
   scanReadButton.disabled=false;
   scanResults.hidden=true;
   scanFindings.replaceChildren();
-  scanStatus.textContent='Screenshot ready. Tap “Read screenshot” to extract possible readings.';
+  scanStatus.textContent='Screenshot ready. The Read Screenshot button is below the preview.';
   return true;
 }
 document.querySelector('#choose-scan-image').addEventListener('click',()=>scanImage.click());
@@ -1847,7 +1848,7 @@ async function prepareScanImage(file){
     }finally{URL.revokeObjectURL(url);}
   }catch{return file;}
 }
-async function cropScanImage(file,topRatio,heightRatio){
+async function cropScanImage(file,topRatio,heightRatio,upscale=1){
   let url='';
   try{
     url=URL.createObjectURL(file);
@@ -1857,12 +1858,13 @@ async function cropScanImage(file,topRatio,heightRatio){
     const y=Math.max(0,Math.round(height*topRatio));
     const cropHeight=Math.min(height-y,Math.round(height*heightRatio));
     if(!width||cropHeight<1)return null;
+    const scale=Math.min(upscale,Math.sqrt(8000000/(width*cropHeight)));
     const canvas=document.createElement('canvas');
-    canvas.width=width;canvas.height=cropHeight;
+    canvas.width=Math.round(width*scale);canvas.height=Math.round(cropHeight*scale);
     const context=canvas.getContext('2d');if(!context)return null;
-    context.fillStyle='#fff';context.fillRect(0,0,width,cropHeight);
-    context.filter='contrast(1.2)';
-    context.drawImage(image,0,y,width,cropHeight,0,0,width,cropHeight);
+    context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);
+    context.filter='grayscale(1) contrast(1.35)';
+    context.drawImage(image,0,y,width,cropHeight,0,0,canvas.width,canvas.height);
     return await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
   }catch{return null;}
   finally{if(url)URL.revokeObjectURL(url);}
@@ -2078,13 +2080,20 @@ scanReadButton.addEventListener('click',async()=>{
     }
     if(found.systolic===null||found.diastolic===null||found.weight===null){
       scanStatus.textContent='Reading the health measurements area…';
-      const healthCrop=await cropScanImage(ocrFile,0.42,0.50);
+      const healthCrop=await cropScanImage(ocrFile,0.42,0.50,2);
       if(healthCrop){
-        await worker.setParameters({tessedit_pageseg_mode:'11'});
-        const healthPass=await worker.recognize(healthCrop);
-        ocrPassages.push('Health readings crop · sparse text layout\n'+(healthPass.data.text||''));
-        found=mergeScanFindings(found,parseDonationScreenshot(healthPass.data.text||''));
-        confidence=Math.max(confidence,healthPass.data.confidence||0);
+        await worker.setParameters({tessedit_pageseg_mode:'6'});
+        const healthBlockPass=await worker.recognize(healthCrop);
+        ocrPassages.push('Enlarged health readings crop · block layout\n'+(healthBlockPass.data.text||''));
+        found=mergeScanFindings(found,parseDonationScreenshot(healthBlockPass.data.text||''));
+        confidence=Math.max(confidence,healthBlockPass.data.confidence||0);
+        if(found.systolic===null||found.diastolic===null){
+          await worker.setParameters({tessedit_pageseg_mode:'11'});
+          const healthSparsePass=await worker.recognize(healthCrop);
+          ocrPassages.push('Enlarged health readings crop · sparse text layout\n'+(healthSparsePass.data.text||''));
+          found=mergeScanFindings(found,parseDonationScreenshot(healthSparsePass.data.text||''));
+          confidence=Math.max(confidence,healthSparsePass.data.confidence||0);
+        }
       }
     }
     scanOcrText.textContent=ocrPassages.join('\n\n---\n\n');
