@@ -1877,6 +1877,7 @@ function mergeScanFindings(primary,secondary){
   const merged={...primary};
   for(const field of ['date','time','systolic','diastolic','pulse','weight','temperature'])
     if(merged[field]===null||merged[field]===undefined||merged[field]==='')merged[field]=secondary[field];
+  merged.bpLeadingOneAdded=Boolean(primary.bpLeadingOneAdded||secondary.bpLeadingOneAdded);
   return merged;
 }
 function loadTesseract(){
@@ -1951,10 +1952,16 @@ function parseDonationScreenshot(text){
     const parsed=Number(String(raw).replace(',','.'));
     return Number.isFinite(parsed)&&parsed>=min&&parsed<=max&&(decimals||Number.isInteger(parsed))?parsed:null;
   };
-  let systolic=number(bpValues?.[0],60,300);
+  const rawSystolic=String(bpValues?.[0]??'').replace(/\D/g,'');
+  let systolic=number(rawSystolic,60,300);
+  let bpLeadingOneAdded=false;
+  if(systolic===null&&/^\d{2}$/.test(rawSystolic)){
+    const likelySystolic=number('1'+rawSystolic,60,300);
+    if(likelySystolic!==null){systolic=likelySystolic;bpLeadingOneAdded=true;}
+  }
   let diastolic=number(bpValues?.[1],30,200);
-  if(systolic===null||diastolic===null||systolic<=diastolic){systolic=null;diastolic=null;}
-  return {date:date||null,time:time||null,systolic,diastolic,pulse:number(pulseValue,25,220),weight:number(weightValue,50,500,true),temperature:number(temperatureValue,80,110,true)};
+  if(systolic===null||diastolic===null||systolic<=diastolic){systolic=null;diastolic=null;bpLeadingOneAdded=false;}
+  return {date:date||null,time:time||null,systolic,diastolic,bpLeadingOneAdded,pulse:number(pulseValue,25,220),weight:number(weightValue,50,500,true),temperature:number(temperatureValue,80,110,true)};
 }
 
 function formatScanValue(name,value){
@@ -2009,15 +2016,16 @@ function applyScanFindings(found){
     }else{
       const systolic=form.elements.systolic,diastolic=form.elements.diastolic;
       const existing=systolic.value||diastolic.value;
+      const correctionNote=value.bpLeadingOneAdded?' · OCR likely missed the leading 1; verify against the screenshot':'';
       if(!existing){
         systolic.value=value.systolic;
         diastolic.value=value.diastolic;
         inserted+=2;
-        item.textContent=label+': '+formatScanValue(key,value)+' · added to the form';
+        item.textContent=label+': '+formatScanValue(key,value)+correctionNote+' · added to the form';
       }else if(systolic.value===String(value.systolic)&&diastolic.value===String(value.diastolic)){
-        item.textContent=label+': '+formatScanValue(key,value)+' · matches the form';
+        item.textContent=label+': '+formatScanValue(key,value)+correctionNote+' · matches the form';
       }else{
-        item.textContent=label+': screenshot shows '+formatScanValue(key,value)+'; form has '+(systolic.value||'—')+'/'+(diastolic.value||'—')+' · kept the existing form values';
+        item.textContent=label+': screenshot shows '+formatScanValue(key,value)+correctionNote+'; form has '+(systolic.value||'—')+'/'+(diastolic.value||'—')+' · kept the existing form values';
       }
     }
     scanFindings.append(item);
