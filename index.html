@@ -8,11 +8,11 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180-v2.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
-<link rel="stylesheet" href="style.css?v=persistent-qr-camera-20261116-42">
+<link rel="stylesheet" href="style.css?v=persistent-qr-menu-20261116-43">
 <script src="menu.js?v=direct-menu-v2-20261112" defer></script>
 <script src="navigation.js?v=direct-menu-v2-20261112" defer></script>
 <script src="jsQR.js?v=1.4.0" defer></script>
-<script src="app.js?v=persistent-qr-camera-20261116-42" defer></script>
+<script src="app.js?v=persistent-qr-menu-20261116-43" defer></script>
 </head>
 <body>
 <header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1><svg class="header-blood-drop" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 4C25 15 12 28 12 40a20 20 0 0 0 40 0C52 28 39 15 32 4Z" fill="#ff3349" stroke="#fff" stroke-width="4"/><path d="M24 39c0 5 3 9 8 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg><span>Donation Log</span></h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
@@ -120,7 +120,7 @@
 <h3>Start CSL intake</h3>
 <p>Complete the CSL questions in the new tab. Return here when your QR code is ready.</p>
 <a id="open-csl-intake" class="intake-open-button" href="https://donor360.cslplasma.com/profile" target="_blank" rel="noopener noreferrer">Open CSL Intake Form <span aria-hidden="true">↗</span></a>
-<div class="intake-ready-tools"><p class="muted">When CSL shows your check-in QR, switch back to Donation Log and tap:</p><button type="button" class="intake-camera-button" id="intake-take-photo">📷 Take Photo</button></div>
+<div class="intake-ready-tools"><p class="muted">When CSL shows your check-in QR, switch back to Donation Log and tap:</p><button type="button" class="intake-camera-button" data-photo-menu-trigger="qr">📷 Add Photo</button></div>
 <p class="scan-privacy muted">Your QR image is stored only on this device so you can close and reopen the app at CSL. It is cleared after check-in or when it is no longer valid. It is never uploaded or added to visit history.</p>
 </section>
 <section id="qr-capture-stage" class="intake-flow-step" hidden>
