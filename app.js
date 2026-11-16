@@ -1953,7 +1953,7 @@ function parseDonationScreenshot(text){
   };
   let systolic=number(bpValues?.[0],60,300);
   let diastolic=number(bpValues?.[1],30,200);
-  if(systolic!==null&&diastolic!==null&&systolic<=diastolic){systolic=null;diastolic=null;}
+  if(systolic===null||diastolic===null||systolic<=diastolic){systolic=null;diastolic=null;}
   return {date:date||null,time:time||null,systolic,diastolic,pulse:number(pulseValue,25,220),weight:number(weightValue,50,500,true),temperature:number(temperatureValue,80,110,true)};
 }
 
