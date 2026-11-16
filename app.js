@@ -254,6 +254,22 @@ function defaultScreeningFinger(donationArm) {
   if (donationArm === 'Right') return 'Left middle';
   return '';
 }
+function recentScreeningAverage(field, decimals) {
+  const values=records
+    .filter(row=>row.visitType==='CSL donation'&&row[field]!==null&&row[field]!==''&&Number.isFinite(Number(row[field])))
+    .sort((a,b)=>dateTimeKey(b).localeCompare(dateTimeKey(a)))
+    .slice(0,10)
+    .map(row=>Number(row[field]));
+  if(!values.length)return '';
+  const average=values.reduce((sum,value)=>sum+value,0)/values.length;
+  return String(Number(average.toFixed(decimals)));
+}
+function applyRecentScreeningAverages() {
+  const hematocrit=recentScreeningAverage('hematocrit',0);
+  const protein=recentScreeningAverage('protein',1);
+  if(hematocrit)form.elements.hematocrit.value=hematocrit;
+  if(protein)form.elements.protein.value=protein;
+}
 
 async function save(next, options = {}) {
   if (!canWrite) throw new Error('Existing browser storage could not be read. Changes are disabled.');
@@ -326,7 +342,7 @@ async function loadSharedRecords(data) {
     if(resumed)editing=visitKey(resumed);
   }
   render();drawReport();
-  if(!editing&&!activeCslDraft){form.elements.arm.value=defaultArm();form.elements.finger.value=defaultScreeningFinger(form.elements.arm.value);}
+  if(!editing&&!activeCslDraft){form.elements.arm.value=defaultArm();form.elements.finger.value=defaultScreeningFinger(form.elements.arm.value);applyRecentScreeningAverages();}
   if(duplicateIdsToDelete.length||correctedLabels){
     await save(cleaned);
     for(const id of duplicateIdsToDelete)await apiRequest('/visits',{method:'DELETE',headers:{'content-type':'application/json'},body:JSON.stringify({id})});
@@ -500,6 +516,7 @@ function resetForm() {
   cancel.hidden = true;
   form.elements.arm.value = defaultArm();
   form.elements.finger.value = defaultScreeningFinger(form.elements.arm.value);
+  applyRecentScreeningAverages();
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   form.elements.date.value = now.toISOString().slice(0, 10);
@@ -995,6 +1012,7 @@ form.elements.visitType.addEventListener('change', () => {
     form.elements.arm.value = defaultArm();
     for (const name of ['time','systolic','diastolic','pulse','weight','temperature','duration','notes','finger']) form.elements[name].value = '';
     form.elements.finger.value = defaultScreeningFinger(form.elements.arm.value);
+    applyRecentScreeningAverages();
     entryPhase = 'intake';
     status.textContent = 'CSL selected. Open the CSL intake form when you are ready.';
   } else {
