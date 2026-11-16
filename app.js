@@ -1425,7 +1425,8 @@ document.querySelector('#open-csl-intake').addEventListener('click',()=>{
   entryPhase='qrCapture';
   clearQrSelection();
   renderWorkflow();
-  qrStatus.textContent='Complete the CSL intake in the other tab. When you return, choose the saved QR screenshot or paste it from the clipboard.';
+  qrStatus.textContent='Complete the CSL intake in the other tab. Return here when your QR code is ready.';
+  saveLocalCslDraft('qrCapture');
 });
 document.querySelector('#choose-qr-image').addEventListener('click',()=>qrImage.click());
 qrImage.addEventListener('change',()=>{void selectQrImage(qrImage.files?.[0]);});
