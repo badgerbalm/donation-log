@@ -1431,6 +1431,7 @@ document.querySelector('#open-csl-intake').addEventListener('click',()=>{
 document.querySelector('#choose-qr-image').addEventListener('click',()=>qrImage.click());
 qrImage.addEventListener('change',()=>{void selectQrImage(qrImage.files?.[0]);});
 qrCameraImage.addEventListener('change',()=>{const file=qrCameraImage.files?.[0];if(file)void selectQrImage(file);qrCameraImage.value='';});
+document.querySelector('#intake-take-photo').addEventListener('click',()=>qrCameraImage.click());
 async function pasteQrImage(){
   qrPasteButton.disabled=true;
   qrStatus.textContent='Checking clipboard for an image…';
