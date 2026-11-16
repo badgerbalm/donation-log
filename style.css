@@ -328,3 +328,13 @@ header h1{display:flex;align-items:center;gap:10px}
 .intake-ready-tools p{margin:0 0 10px}
 .intake-camera-button{width:100%;min-height:56px;border:1px solid #007366;border-radius:14px;background:linear-gradient(100deg,#078875,#006658);color:#fff;font:inherit;font-size:1.08rem;font-weight:850;box-shadow:0 4px 10px #0066582e}
 .intake-camera-button:active{filter:brightness(1.08);transform:translateY(1px)}
+
+
+/* Dark teal backing makes Apple's light paste suggestion easier to distinguish */
+.photo-source-sheet{background:linear-gradient(145deg,#07564f,#063f3b);border-color:#53c4ad;box-shadow:0 18px 48px #041f1dcc}
+.photo-source-sheet h2{color:#f5fffd}
+.photo-source-options{background:#064a44;border-color:#55c5ad}
+.photo-source-options button{background:#07564f;color:#f5fffd}
+.photo-source-options button+button{border-top-color:#56bba8}
+.photo-source-options button:active{background:#a9eddf;color:#063f3b}
+.photo-source-cancel{background:#55c9ad;color:#063f3b;border-color:#8be4d2;box-shadow:0 3px 10px #031f1d66}
