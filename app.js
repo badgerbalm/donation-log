@@ -249,6 +249,11 @@ function defaultArm() {
   if (latest?.arm === 'Right') return 'Left';
   return '';
 }
+function defaultScreeningFinger(donationArm) {
+  if (donationArm === 'Left') return 'Right middle';
+  if (donationArm === 'Right') return 'Left middle';
+  return '';
+}
 
 async function save(next, options = {}) {
   if (!canWrite) throw new Error('Existing browser storage could not be read. Changes are disabled.');
@@ -321,7 +326,7 @@ async function loadSharedRecords(data) {
     if(resumed)editing=visitKey(resumed);
   }
   render();drawReport();
-  if(!editing&&!activeCslDraft) form.elements.arm.value=defaultArm();
+  if(!editing&&!activeCslDraft){form.elements.arm.value=defaultArm();form.elements.finger.value=defaultScreeningFinger(form.elements.arm.value);}
   if(duplicateIdsToDelete.length||correctedLabels){
     await save(cleaned);
     for(const id of duplicateIdsToDelete)await apiRequest('/visits',{method:'DELETE',headers:{'content-type':'application/json'},body:JSON.stringify({id})});
@@ -494,6 +499,7 @@ function resetForm() {
   heading.textContent = 'New Visit';
   cancel.hidden = true;
   form.elements.arm.value = defaultArm();
+  form.elements.finger.value = defaultScreeningFinger(form.elements.arm.value);
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   form.elements.date.value = now.toISOString().slice(0, 10);
@@ -988,6 +994,7 @@ form.elements.visitType.addEventListener('change', () => {
   if (isCsl) {
     form.elements.arm.value = defaultArm();
     for (const name of ['time','systolic','diastolic','pulse','weight','temperature','duration','notes','finger']) form.elements[name].value = '';
+    form.elements.finger.value = defaultScreeningFinger(form.elements.arm.value);
     entryPhase = 'intake';
     status.textContent = 'CSL selected. Open the CSL intake form when you are ready.';
   } else {
