@@ -234,6 +234,15 @@ async function restoreCslDraft(){
   form.elements.id.value=draft.id;
   form.elements.visitType.value='CSL donation';
   entryPhase=draft.phase;
+  if(!form.elements.hematocrit.value){
+    const average=recentScreeningAverage('hematocrit',0);
+    if(average)form.elements.hematocrit.value=average;
+  }
+  if(!form.elements.protein.value){
+    const average=recentScreeningAverage('protein',1);
+    if(average)form.elements.protein.value=average;
+  }
+  if(!draft.hematocrit||!draft.protein)saveLocalCslDraft(draft.phase);
   heading.textContent='New Visit';
   cancel.hidden=false;
   renderWorkflow();
