@@ -361,11 +361,12 @@ button.last-visit-card:disabled{cursor:default;opacity:1}
 @media(max-width:480px){.header-row{gap:8px}.header-row .home-nav-button{flex-basis:60px;width:60px;min-width:60px}.header-row .menu-button{min-width:78px;padding-inline:8px}.history-visit-list{padding:12px}.history-visit-list #history li{grid-template-columns:1fr}.history-visit-list #history .actions{justify-content:flex-start}}
 
 
-/* Keep Last Visit tappable while preserving the original summary card appearance. */
-main button.last-visit-card,
-main button.last-visit-card:hover,
-main button.last-visit-card:focus,
-main button.last-visit-card:active{
+
+/* Preserve the white Last Visit summary card against the dashboard button theme. */
+body:not(.menu-open) main button.last-visit-card:not(.menu-link):not(.menu-button),
+body:not(.menu-open) main button.last-visit-card:not(.menu-link):not(.menu-button):hover,
+body:not(.menu-open) main button.last-visit-card:not(.menu-link):not(.menu-button):focus,
+body:not(.menu-open) main button.last-visit-card:not(.menu-link):not(.menu-button):active{
   display:flex;
   align-items:center;
   width:100%;
@@ -381,8 +382,14 @@ main button.last-visit-card:active{
   box-shadow:0 12px 30px #126d5b17;
   filter:none;
 }
-main button.last-visit-card:hover{border-color:#7bc7b9;box-shadow:0 14px 30px #126d5b24}
-main button.last-visit-card:focus-visible{outline:3px solid #138c78;outline-offset:2px}
-.last-visit-card h2{color:#063f3b}
-.last-visit-card .last-visit-date{color:#123b3a}
-.last-visit-card .last-visit-details{color:#12544d}
+body:not(.menu-open) main button.last-visit-card:not(.menu-link):not(.menu-button):hover{
+  border-color:#7bc7b9;
+  box-shadow:0 14px 30px #126d5b24;
+}
+body:not(.menu-open) main button.last-visit-card:not(.menu-link):not(.menu-button):focus-visible{
+  outline:3px solid #138c78;
+  outline-offset:2px;
+}
+body:not(.menu-open) main button.last-visit-card:not(.menu-link):not(.menu-button) h2{color:#063f3b}
+body:not(.menu-open) main button.last-visit-card:not(.menu-link):not(.menu-button) .last-visit-date{color:#123b3a}
+body:not(.menu-open) main button.last-visit-card:not(.menu-link):not(.menu-button) .last-visit-details{color:#12544d}
