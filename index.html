@@ -8,14 +8,14 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180-v2.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
-<link rel="stylesheet" href="style.css?v=scan-below-preview-enhanced-ocr-20261116-49">
+<link rel="stylesheet" href="style.css?v=home-history-nav-20261124-51">
 <script src="menu.js?v=direct-menu-v2-20261112" defer></script>
-<script src="navigation.js?v=direct-menu-v2-20261112" defer></script>
+<script src="navigation.js?v=home-history-nav-20261124-51" defer></script>
 <script src="jsQR.js?v=1.4.0" defer></script>
-<script src="app.js?v=bp-leading-one-recovery-20261116-50" defer></script>
+<script src="app.js?v=home-history-review-20261124-51" defer></script>
 </head>
 <body>
-<header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1><svg class="header-blood-drop" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 4C25 15 12 28 12 40a20 20 0 0 0 40 0C52 28 39 15 32 4Z" fill="#ff3349" stroke="#fff" stroke-width="4"/><path d="M24 39c0 5 3 9 8 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg><span>Donation Log</span></h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
+<header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1><svg class="header-blood-drop" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 4C25 15 12 28 12 40a20 20 0 0 0 40 0C52 28 39 15 32 4Z" fill="#ff3349" stroke="#fff" stroke-width="4"/><path d="M24 39c0 5 3 9 8 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg><span>Donation Log</span></h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="home-open" class="menu-button home-nav-button" aria-label="Go to home screen" title="Home">⌂ Home</button><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
 <div id="menu-backdrop" class="menu-backdrop" aria-hidden="true" hidden></div>
 <aside id="app-menu" class="app-menu" role="dialog" aria-modal="true" aria-labelledby="menu-title" aria-hidden="true" inert hidden>
 <div class="menu-top"><h2 id="menu-title">Donation Log menu</h2><button type="button" id="menu-close" class="secondary" autofocus>Close</button></div>
@@ -200,13 +200,20 @@
 <p id="status" role="status" aria-live="polite"></p>
 <div id="connection-help" class="scan-box" hidden><h3>Connect your private data</h3><p>Sign in with your Google account here. Google will return you to Donation Log after confirming your identity. Safari and the Home Screen app may each need their own sign-in.</p><button type="button" class="connect-google">Sign in to Donation Log</button><p class="muted connection-status" role="status" aria-live="polite"></p></div>
 </div>
-<article id="last-visit-card" class="card last-visit-card">
+<button id="last-visit-card" type="button" class="card last-visit-card" aria-label="Review your last visit">
 <div class="last-visit-icon" aria-hidden="true"><svg viewBox="0 0 64 64" focusable="false"><path d="M32 4C25 15 12 28 12 40a20 20 0 0 0 40 0C52 28 39 15 32 4Z" fill="#ff3349" stroke="#fff" stroke-width="4"/><path d="M24 39c0 5 3 9 8 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg></div>
-<div class="last-visit-copy"><h2>Last Visit</h2><p id="last-visit-date" class="last-visit-date"></p><p id="last-visit-details" class="last-visit-details"></p></div>
-</article>
+<div class="last-visit-copy"><h2>Last Visit</h2><p id="last-visit-date" class="last-visit-date"></p><p id="last-visit-details" class="last-visit-details"></p><span class="last-visit-action">Tap to review this visit ›</span></div>
+</button>
 </section>
 <section class="card page" data-page-panel="history" aria-labelledby="history-title" hidden>
 <h2 id="history-title">Visit history</h2>
+<p class="muted">Your saved visits appear newest first. Use Edit to review or update a visit.</p>
+<section class="history-visit-list" aria-labelledby="saved-visits-title">
+<h3 id="saved-visits-title">Saved visits</h3>
+<ul id="history"></ul>
+<p id="history-status" role="status" aria-live="polite"></p>
+</section>
+<h3 class="history-chart-title">Measurements over time</h3>
 <p class="muted">One panel per measurement, with labeled scales and years. Blood pressure uses mm Hg; weight, hematocrit, and total protein each use their own units.</p>
 <div class="history-chart-wrap"><svg id="history-chart" role="img" aria-label="Blood pressure and donation measurements over time"></svg></div>
 <div class="history-legend"><span>Blood pressure</span><span>Weight</span><span>Hematocrit</span><span>Total protein</span></div>
@@ -216,9 +223,7 @@
 <button class="secondary" id="import">Import backup</button>
 <input type="file" id="file" accept=".json,application/json" hidden>
 </div>
-<p id="history-status" role="status"></p>
 <div class="table-scroll"><table id="history-table"><thead><tr><th>Date</th><th>Visit type</th><th>BP</th><th>Pulse</th><th>Weight</th><th>Temp</th><th>Screening finger</th><th>Hematocrit</th><th>Total protein (g/dL)</th><th>Donation arm / Duration</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
-<ul id="history"></ul>
 </section>
 </main>
 <dialog id="photo-source-dialog" class="photo-source-dialog" aria-labelledby="photo-source-title">

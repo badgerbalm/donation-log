@@ -338,3 +338,24 @@ header h1{display:flex;align-items:center;gap:10px}
 .photo-source-options button+button{border-top-color:#56bba8}
 .photo-source-options button:active{background:#a9eddf;color:#063f3b}
 .photo-source-cancel{background:#55c9ad;color:#063f3b;border-color:#8be4d2;box-shadow:0 3px 10px #031f1d66}
+
+
+/* Direct home navigation and tappable last-visit summary */
+.header-row .home-nav-button{flex:0 0 66px;width:66px;min-width:66px;min-height:42px;padding:7px 6px;background:#58c5a5;color:#0b2529;border-color:#58c5a5;font-size:.9rem}
+button.last-visit-card{width:100%;text-align:left;cursor:pointer;color:#123b3a;font:inherit;background:linear-gradient(145deg,#fff 0%,#fbfffe 100%);border:1px solid #d4eee8}
+body:not(.menu-open) main button.last-visit-card{background:linear-gradient(145deg,#fff 0%,#fbfffe 100%);color:#123b3a;border-color:#d4eee8}
+button.last-visit-card:not(:disabled):hover{border-color:#7bc7b9;box-shadow:0 14px 30px #126d5b24}
+button.last-visit-card:disabled{cursor:default;opacity:1}
+.last-visit-action{display:inline-block;margin-top:10px;color:#087b6d;font-weight:800;font-size:.9rem}
+.history-visit-list{margin:16px 0 24px;padding:14px 16px;border:1px solid #c6e9e2;border-radius:16px;background:linear-gradient(145deg,#f5fffc,#eaf9f6)}
+.history-visit-list h3,.history-chart-title{margin:0 0 8px;color:#063f3b;font-size:1.12rem}
+.history-visit-list #history{margin:0;padding:0;list-style:none}
+.history-visit-list #history li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;border-top:1px solid #d7eeea;padding:12px 0}
+.history-visit-list #history li:first-child{border-top:0;padding-top:4px}
+.history-visit-list #history li strong{display:block;color:#123b3a;font-size:1rem}
+.history-visit-list #history li span{display:block;color:#4d6364;overflow-wrap:anywhere}
+.history-visit-list #history .actions{margin:0;justify-content:flex-end}
+.history-visit-list #history .actions button{min-height:40px;padding:7px 12px}
+.history-visit-list #history-status{margin:10px 0 0;color:#456661}
+.history-chart-title{margin-top:18px}
+@media(max-width:480px){.header-row{gap:8px}.header-row .home-nav-button{flex-basis:60px;width:60px;min-width:60px}.header-row .menu-button{min-width:78px;padding-inline:8px}.history-visit-list{padding:12px}.history-visit-list #history li{grid-template-columns:1fr}.history-visit-list #history .actions{justify-content:flex-start}}

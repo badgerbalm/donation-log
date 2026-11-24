@@ -17,6 +17,7 @@ const cancel = document.querySelector('#cancel');
 const heading = document.querySelector('#form-title');
 let editing = null;
 let creatingNew = false;
+let homeViewForced = false;
 let entryPhase = 'intake';
 let qrPreviewUrl = '';
 let activeVisitId = null;
@@ -482,6 +483,9 @@ function renderLastVisitSummary() {
   const card = document.querySelector('#last-visit-card');
   const date = document.querySelector('#last-visit-date');
   const details = document.querySelector('#last-visit-details');
+  card.disabled = !row;
+  card.setAttribute('aria-label', row ? 'Review last visit from ' + new Date(row.date + 'T12:00:00').toLocaleDateString() : 'No saved CSL visit to review');
+  card.onclick = row ? () => startEditing(row) : null;
   if (!row) {
     if (visitsLoadState === 'loading') {
       date.textContent = 'Loading visit history…';
@@ -513,6 +517,7 @@ function renderPriorVisitSummary() {
   details.textContent = [prior.finger ? 'Finger stick: ' + prior.finger : '', prior.arm ? 'Donation arm: ' + prior.arm : '', prior.hematocrit !== null ? 'Hematocrit: ' + prior.hematocrit + '%' : '', prior.protein !== null ? 'Protein: ' + prior.protein.toFixed(1) + ' g/dL' : '', prior.duration !== null ? 'Duration: ' + prior.duration + ' min' : ''].filter(Boolean).join(' · ');
 }
 function resetForm() {
+  homeViewForced = false;
   clearScanSelection();
   clearQrSelection();
   form.reset();
@@ -535,6 +540,7 @@ function resetForm() {
   renderEntryDashboard();
 }
 function startEditing(row) {
+  homeViewForced = false;
   editing = visitKey(row);
   activeVisitId = row.id || editing;
   creatingNew = false;
@@ -542,7 +548,7 @@ function startEditing(row) {
   for (const field of columns) if (form.elements[field]) form.elements[field].value = row[field] ?? '';
   form.elements.id.value = row.id || '';
   entryPhase = row.visitType === 'CSL donation' && row.id?.startsWith('donation-log-')
-    ? (row.duration === null ? 'duration' : (row.time || row.systolic === null ? 'scan' : 'details'))
+    ? (row.duration === null ? 'duration' : (scanWasRead ? 'scan' : 'details'))
     : 'details';
   heading.textContent = needsDonationDetails(row) ? 'Continue CSL Visit' : 'Edit Visit';
   cancel.hidden = false;
@@ -551,6 +557,7 @@ function startEditing(row) {
   document.querySelectorAll('.menu-link').forEach(link => link.classList.toggle('active', link.dataset.page === 'entry'));
   renderWorkflow();
   renderEntryDashboard();
+  requestAnimationFrame(() => document.querySelector('#entry-editor')?.scrollIntoView({behavior:'smooth',block:'start'}));
 }
 function needsDonationDetails(row) {
   if (row.visitType !== 'CSL donation') return false;
@@ -583,14 +590,16 @@ function renderEntryDashboard() {
   const panel = document.querySelector('#pending-visits');
   if (!panel) return;
   const todaysVisits = records.filter(row => row.date === localToday()).sort((a,b) => dateTimeKey(b).localeCompare(dateTimeKey(a)));
-  const showQrAtHome = creatingNew && entryPhase === 'qrShow';
-  const showDashboard = editing === null && (!creatingNew || showQrAtHome);
+  const showQrAtHome = !homeViewForced && creatingNew && entryPhase === 'qrShow';
+  const showDashboard = homeViewForced || (editing === null && (!creatingNew || showQrAtHome));
   panel.hidden = !showDashboard;
   panel.classList.toggle('qr-only', showQrAtHome);
   document.querySelector('main').classList.toggle('qr-mode', showQrAtHome);
   document.querySelector('#last-visit-card').hidden = showQrAtHome;
   document.querySelector('#home-qr-card').hidden = !showQrAtHome;
-  document.querySelector('#entry-editor').hidden = !editing && (!creatingNew || showQrAtHome);
+  document.querySelector('#entry-editor').hidden = homeViewForced || (!editing && (!creatingNew || showQrAtHome));
+  const addVisitButton = document.querySelector('#add-new-visit');
+  if (addVisitButton) addVisitButton.textContent = homeViewForced && (editing || creatingNew) ? 'Continue Visit' : (activeCslDraft?.savedOn === localToday() ? 'Continue Saved Visit' : 'Add New Visit');
   const list = document.querySelector('#pending-list');
   list.replaceChildren();
   document.querySelector('#today-empty-state').hidden = todaysVisits.length > 0;
@@ -641,17 +650,28 @@ function render() {
     return;
   }
   historyStatus.textContent = records.length + (records.length === 1 ? ' visit saved' : ' visits saved');
-  for (const row of [...records].sort((a,b) => visitKey(b).localeCompare(visitKey(a)))) {
+  for (const row of [...records].sort((a,b) => dateTimeKey(b).localeCompare(dateTimeKey(a)))) {
     const item = document.createElement('li');
     const text = document.createElement('div');
     const title = document.createElement('strong');
     const details = document.createElement('span');
-    title.textContent = visitKey(row).trim();
+    const visitDate = new Date(row.date + 'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+    title.textContent = [visitDate,row.time,row.visitType === 'CSL donation' ? 'CSL donation' : row.visitType].filter(Boolean).join(' · ');
     const readings = [];
-    if (row.systolic !== null || row.diastolic !== null) readings.push((row.systolic ?? '—') + '/' + (row.diastolic ?? '—') + ' mm Hg');
-    if (row.pulse !== null) readings.push(row.pulse + ' bpm');
-    if (row.weight !== null) readings.push(row.weight + ' lb');
-    details.textContent = readings.join(' · ') || 'Visit details';
+    const missing = [];
+    if (row.finger) readings.push('Finger stick ' + row.finger); else if (row.visitType === 'CSL donation') missing.push('finger');
+    if (row.arm) readings.push('Donation arm ' + row.arm); else if (row.visitType === 'CSL donation') missing.push('donation arm');
+    if (row.hematocrit !== null) readings.push('Hematocrit ' + row.hematocrit + '%'); else if (row.visitType === 'CSL donation') missing.push('hematocrit');
+    if (row.protein !== null) readings.push('Protein ' + Number(row.protein).toFixed(1) + ' g/dL'); else if (row.visitType === 'CSL donation') missing.push('protein');
+    if (row.duration !== null) readings.push('Duration ' + row.duration + ' min'); else if (row.visitType === 'CSL donation') missing.push('duration');
+    if (row.systolic !== null && row.diastolic !== null) readings.push('BP ' + row.systolic + '/' + row.diastolic);
+    else if (row.visitType === 'CSL donation') missing.push('blood pressure');
+    if (row.pulse !== null) readings.push('Pulse ' + row.pulse); else if (row.visitType === 'CSL donation') missing.push('pulse');
+    if (row.weight !== null) readings.push('Weight ' + row.weight + ' lb'); else if (row.visitType === 'CSL donation') missing.push('weight');
+    if (row.temperature !== null) readings.push('Temp ' + row.temperature + ' °F'); else if (row.visitType === 'CSL donation') missing.push('temperature');
+    if (row.notes) readings.push(row.notes);
+    if (row.visitType === 'CSL donation') readings.push(missing.length ? 'Still needed: ' + missing.join(', ') : 'Visit details complete');
+    details.textContent = readings.join(' · ') || 'No visit readings recorded';
     text.append(title, details);
     const edit = document.createElement('button');
     edit.textContent = needsDonationDetails(row) ? 'Add donation details' : 'Edit';
@@ -673,7 +693,7 @@ function render() {
 
 function renderHistoryTable(){
   const body=document.querySelector('#history-table tbody');body.replaceChildren();
-  for(const row of [...records].sort((a,b)=>visitKey(b).localeCompare(visitKey(a)))){
+  for(const row of [...records].sort((a,b)=>dateTimeKey(b).localeCompare(dateTimeKey(a)))){
     const tr=document.createElement('tr');
     const values=[row.date,row.visitType,(row.systolic??'')+'/'+(row.diastolic??''),row.pulse,row.weight,row.temperature,row.finger,row.hematocrit,row.protein,[row.arm? 'Donation arm: '+row.arm:'',row.duration===null?'':row.duration+' min'].filter(Boolean).join(' · '),row.notes];
     for(const value of values){const td=document.createElement('td');td.textContent=value===null?'':String(value);tr.append(td);}
@@ -1031,7 +1051,21 @@ form.elements.visitType.addEventListener('change', () => {
   }
   renderWorkflow();
 });
+function showHomeView(){
+  if(creatingNew && form.elements.visitType.value === 'CSL donation') saveLocalCslDraft(entryPhase);
+  homeViewForced = true;
+  document.querySelectorAll('[data-page-panel]').forEach(panel => { panel.hidden = panel.dataset.pagePanel !== 'entry'; });
+  renderEntryDashboard();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelector('#home-open')?.addEventListener('click', showHomeView);
+document.addEventListener('donation-log:page-selected', event => {
+  if(event.detail?.page === 'home') showHomeView();
+  else { homeViewForced = false; renderEntryDashboard(); }
+});
 document.querySelector('#add-new-visit').addEventListener('click', () => {
+  if(homeViewForced && (editing || creatingNew)) { homeViewForced = false; renderEntryDashboard(); document.querySelector('#entry-editor')?.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+  homeViewForced = false;
   if(activeCslDraft?.savedOn===localToday()){void restoreCslDraft();return;}
   resetForm();
   creatingNew = true;
