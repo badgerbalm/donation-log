@@ -8,18 +8,24 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180-v2.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>Donation Log</title>
-<link rel="stylesheet" href="style.css?v=lastvisit-card-contrast-20261124-53">
+<link rel="stylesheet" href="style.css?v=menu-header-home-refresh-20261124-54">
 <script src="menu.js?v=direct-menu-v2-20261112" defer></script>
 <script src="navigation.js?v=home-history-nav-20261124-51" defer></script>
 <script src="jsQR.js?v=1.4.0" defer></script>
-<script src="app.js?v=home-history-review-20261124-51" defer></script>
+<script src="app.js?v=menu-header-home-refresh-20261124-54" defer></script>
 </head>
 <body>
 <header><div class="header-inner"><div class="header-row"><div><p class="brand">CSL PLASMA</p><h1><svg class="header-blood-drop" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 4C25 15 12 28 12 40a20 20 0 0 0 40 0C52 28 39 15 32 4Z" fill="#ff3349" stroke="#fff" stroke-width="4"/><path d="M24 39c0 5 3 9 8 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg><span>Donation Log</span></h1><p>Record your donation visits and screening readings.</p></div><button type="button" id="home-open" class="menu-button home-nav-button" aria-label="Go to home screen" title="Home">⌂ Home</button><button type="button" id="menu-open" class="menu-button" aria-haspopup="dialog" aria-expanded="false" aria-controls="app-menu">☰ Menu</button></div></div></header>
 <div id="menu-backdrop" class="menu-backdrop" aria-hidden="true" hidden></div>
 <aside id="app-menu" class="app-menu" role="dialog" aria-modal="true" aria-labelledby="menu-title" aria-hidden="true" inert hidden>
-<div class="menu-top"><h2 id="menu-title">Donation Log menu</h2><button type="button" id="menu-close" class="secondary" autofocus>Close</button></div>
-<div class="menu-refresh"><button type="button" id="refresh-app"><span class="menu-icon" aria-hidden="true"><svg viewBox="0 0 36 36" width="24" height="24"><path d="M27 13a10 10 0 0 0-17-4L7 12M7 6v6h6M9 23a10 10 0 0 0 17 4l3-3m0 6v-6h-6" fill="none" stroke="#087b6d" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Refresh app</span></button><p class="muted">Load the latest app and saved visit data.</p></div>
+<div class="menu-top">
+<div class="menu-title-row">
+<button type="button" id="menu-home-open" class="menu-home-link" aria-label="Go to home screen" title="Home">⌂ <span>Home</span></button>
+<h2 id="menu-title">Donation Log menu</h2>
+<button type="button" id="refresh-app" class="menu-refresh-trigger" aria-label="Refresh app" title="Refresh app"><span class="menu-icon" aria-hidden="true"><svg viewBox="0 0 36 36" width="28" height="28"><path d="M27 13a10 10 0 0 0-17-4L7 12M7 6v6h6M9 23a10 10 0 0 0 17 4l3-3m0 6v-6h-6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="visually-hidden">Refresh app</span></button>
+</div>
+<div class="menu-subtitle-row"><p class="muted">Load the latest app and saved visit data.</p><button type="button" id="menu-close" class="secondary" autofocus>Close</button></div>
+</div>
 <div class="menu-content">
 <p class="menu-section-title">VISIT LOG</p>
 <button type="button" data-page="report" class="menu-link"><span class="menu-icon" aria-hidden="true"><svg viewBox="0 0 36 36" width="24" height="24"><path d="M8 7v8a7 7 0 0 0 14 0V7M5 7h6M19 7h6M15 22v3a6 6 0 0 0 12 0v-2" fill="none" stroke="#7662bf" stroke-width="2.5" stroke-linecap="round"/><circle cx="27" cy="19" r="4" fill="#d9f7ef" stroke="#138b7c" stroke-width="2.3"/><circle cx="27" cy="19" r="1.2" fill="#138b7c"/></svg></span><span>Blood pressure report</span></button>

@@ -1059,6 +1059,10 @@ function showHomeView(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 document.querySelector('#home-open')?.addEventListener('click', showHomeView);
+document.querySelector('#menu-home-open')?.addEventListener('click', () => {
+  showHomeView();
+  document.dispatchEvent(new CustomEvent('donation-log:close-menu', { detail: { returnFocus: false } }));
+});
 document.addEventListener('donation-log:page-selected', event => {
   if(event.detail?.page === 'home') showHomeView();
   else { homeViewForced = false; renderEntryDashboard(); }
